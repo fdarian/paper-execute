@@ -38,7 +38,7 @@ bun run src/index.ts
 ```json
 {
   "command": "bun",
-  "args": ["run", "/Users/farreldarian/code/fdarian/paper-execute/src/index.ts"]
+  "args": ["run", <path-to-repo>/src/index.ts"]
 }
 ```
 
