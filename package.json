@@ -1,0 +1,33 @@
+{
+	"name": "paper-execute",
+	"private": true,
+	"type": "module",
+	"packageManager": "bun@1.3.14",
+	"scripts": {
+		"check:type": "tsc --noEmit",
+		"check:lint": "biome check .",
+		"format": "biome format --write .",
+		"start": "bun run src/index.ts"
+	},
+	"dependencies": {
+		"@effect/platform-bun": "4.0.0-beta.59",
+		"@executor-js/execution": "^1.5.28",
+		"@executor-js/plugin-mcp": "^1.5.28",
+		"@executor-js/runtime-quickjs": "^1.5.28",
+		"@executor-js/sdk": "^1.5.28",
+		"@modelcontextprotocol/sdk": "^1.29.0",
+		"@phosphor-icons/core": "^2.1.1",
+		"effect": "4.0.0-beta.59",
+		"minisearch": "^7.2.0",
+		"zod": "^4.4.3"
+	},
+	"devDependencies": {
+		"@biomejs/biome": "^2.5.2",
+		"bun-types": "^1.3.14",
+		"@total-typescript/tsconfig": "^1.0.4",
+		"typescript": "^6.0.3"
+	},
+	"patchedDependencies": {
+		"@executor-js/plugin-mcp@1.5.28": "patches/@executor-js%2Fplugin-mcp@1.5.28.patch"
+	}
+}

@@ -1,0 +1,25 @@
+diff --git a/node_modules/@executor-js/plugin-mcp/.bun-tag-b2ad26f55ec63735 b/.bun-tag-b2ad26f55ec63735
+new file mode 100644
+index 0000000000000000000000000000000000000000..e69de29bb2d1d6434b8b29ae775ad8c2e48c5391
+diff --git a/dist/chunk-S2C4J4O3.js b/dist/chunk-S2C4J4O3.js
+index fd59350dc13257e71b7cf70cfdc252976cde88da..3fdf0394b1d6db959bcf07dd0304c51f3952c187 100644
+--- a/dist/chunk-S2C4J4O3.js
++++ b/dist/chunk-S2C4J4O3.js
+@@ -114,7 +114,7 @@ import {
+   ToolResult,
+   classifyHttpStatus,
+   ToolName
+-} from "@executor-js/sdk";
++} from "@executor-js/sdk/core";
+ import {
+   TOKEN_VARIABLE,
+   describeApiKeyAuthMethod,
+@@ -412,7 +412,7 @@ import {
+   ElicitationId,
+   FormElicitation,
+   UrlElicitation
+-} from "@executor-js/sdk";
++} from "@executor-js/sdk/core";
+ var ArgsRecord = Schema3.Record(Schema3.String, Schema3.Unknown);
+ var decodeArgsRecord = Schema3.decodeUnknownOption(ArgsRecord);
+ var argsRecord = (value) => Option4.getOrElse(decodeArgsRecord(value), () => ({}));

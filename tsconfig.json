@@ -1,0 +1,18 @@
+{
+	"extends": "@total-typescript/tsconfig/bundler/no-dom/app",
+	"compilerOptions": {
+		"baseUrl": ".",
+		"ignoreDeprecations": "6.0",
+		"paths": {
+			"#/*": ["src/*"]
+		},
+		"allowImportingTsExtensions": true,
+		"noErrorTruncation": true,
+		"module": "ESNext",
+		"moduleResolution": "Bundler",
+		"target": "ES2022",
+		"lib": ["ES2022", "DOM"],
+		"types": ["bun-types"]
+	},
+	"include": ["src/**/*.ts"]
+}
