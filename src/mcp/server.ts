@@ -1,5 +1,6 @@
 import type { ExecutionEngine } from "@executor-js/execution/core";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import { ContentBlockSchema } from "@modelcontextprotocol/sdk/types.js";
 import { Effect } from "effect";
 import type * as Cause from "effect/Cause";
 import { z } from "zod";
@@ -13,6 +14,19 @@ type ExecuteResult = {
 	readonly logs?: readonly string[];
 };
 
+const contentArraySchema = z.array(ContentBlockSchema);
+
+function renderExecuteMetadata(result: ExecuteResult): string[] {
+	const parts: string[] = [];
+	if (result.output !== undefined && result.output.length > 0) {
+		parts.push(`Output items: ${result.output.length}`);
+	}
+	if (result.logs !== undefined && result.logs.length > 0) {
+		parts.push(`Logs:\n${result.logs.join("\n")}`);
+	}
+	return parts;
+}
+
 function renderExecuteResult(result: ExecuteResult): string {
 	if (result.error !== undefined) {
 		const parts = [`Error: ${result.error}`];
@@ -24,14 +38,7 @@ function renderExecuteResult(result: ExecuteResult): string {
 
 	const resultText =
 		typeof result.result === "string" ? result.result : JSON.stringify(result.result, null, 2);
-	const parts = [resultText];
-	if (result.output !== undefined && result.output.length > 0) {
-		parts.push(`Output items: ${result.output.length}`);
-	}
-	if (result.logs !== undefined && result.logs.length > 0) {
-		parts.push(`Logs:\n${result.logs.join("\n")}`);
-	}
-	return parts.join("\n\n");
+	return [resultText, ...renderExecuteMetadata(result)].join("\n\n");
 }
 
 export function createPaperExecuteServer<E extends Cause.YieldableError>(
@@ -60,6 +67,19 @@ export function createPaperExecuteServer<E extends Cause.YieldableError>(
 
 			if (result.error !== undefined) {
 				throw new Error(renderExecuteResult(result));
+			}
+
+			const content = contentArraySchema.safeParse(result.result);
+			if (content.success) {
+				const metadata = renderExecuteMetadata(result);
+				return {
+					content: [
+						...content.data,
+						...(metadata.length > 0
+							? [{ type: "text" as const, text: metadata.join("\n\n") }]
+							: []),
+					],
+				};
 			}
 
 			return {
