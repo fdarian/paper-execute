@@ -26,7 +26,7 @@ await paper.finish_working_on_nodes({ nodeIds: [targetNodeId] });
 
 ### Tree text and screenshots
 
-`get_tree_summary` returns two text blocks upstream: file metadata (`file`, `contentHash`) and the tree payload (`summary`, `nodeId`, `depth`). Both blocks remain in the returned array: `t[0].text` contains metadata and `t[1].text` contains the tree payload. Neither text is JSON-parsed.
+`get_tree_summary` returns two text blocks upstream: file metadata (`file`, `contentHash`) and the tree payload (`summary`, `nodeId`, `depth`). Both blocks remain in the returned array: `t[0].text` contains metadata and `t[1].text` contains the tree payload as a JSON string. The helper does not JSON-parse either text; parse the tree payload in your snippet to return its readable `summary`.
 
 Existing code that collects screenshot images with `emit` must iterate the returned array directly:
 
@@ -34,10 +34,10 @@ Existing code that collects screenshot images with `emit` must iterate the retur
 const t = await paper.get_tree_summary({ fileId, nodeId: "73N-0", depth: 2 });
 const s = await paper.get_screenshot({ fileId, nodeId: "65V-0" });
 for (const c of s) if (c.type === "image") emit(c);
-return t[1].text;
+return JSON.parse(t[1].text).summary;
 ```
 
-This delivers the screenshot image items followed by the tree payload text.
+This delivers the screenshot image items followed by the readable tree summary with actual line breaks.
 
 Requires the Paper desktop app running (its MCP defaults to `http://127.0.0.1:29979/mcp`; override with `PAPER_MCP_URL`).
 
