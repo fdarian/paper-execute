@@ -51,7 +51,8 @@ export function createPaperExecuteServer<E extends Cause.YieldableError>(
 		{
 			description: [
 				"Execute async TypeScript inside an executor QuickJS sandbox wired to the Paper MCP plus Phosphor icon helpers. Everything is async — always `await`.",
-				"`paper.<tool>(args)` drives Paper and returns the tool's data (throws on failure). Common tools: `write_html`, `open_file`, `create_artboard`, `get_selection`, `find_nodes`, `finish_working_on_nodes`.",
+				"`paper.<tool>(args)` throws on failure. It returns `structuredContent` when present; otherwise a newline-joined string for all-text content (never JSON-parsed), or an MCP content array for mixed/non-text content. There is no `.content` wrapper. Common tools: `write_html`, `open_file`, `create_artboard`, `get_selection`, `find_nodes`, `finish_working_on_nodes`.",
+				"To send screenshot images to the client, return the content array: `return await paper.get_screenshot({ fileId, nodeId })`. `emit(c)` collects individual items, but this server only reports their count, not their content. Iterate screenshots directly (`for (const c of s)`), not `s.content`.",
 				"`icon_get(name)` returns embeddable Phosphor SVG markup as a string — e.g. `await paper.write_html({ html: await icon_get('acorn'), targetNodeId, mode: 'insert-children' })`. `icon_search(query)` returns candidate matches.",
 				"For `write_html`, use inline styles and flexbox; avoid margin, grid, and tables. Call `finish_working_on_nodes` when done. Whatever your code `return`s comes back as the result.",
 			].join("\n"),

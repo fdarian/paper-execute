@@ -1,9 +1,10 @@
 /**
  * Prepended to every agent snippet. Executor wraps each sandbox tool call in an
  * `{ ok, data } | { ok: false, error }` envelope; this preamble unwraps it so
- * agents work with bare values and get a thrown error on failure — turning
- * Paper CallToolResults into structured values, text, or non-text content arrays,
- * and `(await tools.iconTools.icon_get({query})).data.svg` into `await icon_get("acorn")`.
+ * agents get a thrown error on failure. Paper calls return structuredContent
+ * when present, otherwise newline-joined text (without JSON parsing) when every
+ * block is text, otherwise the content array without a `.content` wrapper.
+ * Icon helpers return SVG strings or search results, not MCP content.
  */
 export const paperExecutorPreamble = [
 	"const __unwrap = (res) => {",
