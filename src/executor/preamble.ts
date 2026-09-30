@@ -2,8 +2,8 @@
  * Prepended to every agent snippet. Executor wraps each sandbox tool call in an
  * `{ ok, data } | { ok: false, error }` envelope; this preamble unwraps it so
  * agents get a thrown error on failure. Paper calls return structuredContent
- * when present, otherwise newline-joined text (without JSON parsing) when every
- * block is text, otherwise the content array without a `.content` wrapper.
+ * when present, otherwise a string (without JSON parsing) for exactly one text
+ * block, otherwise the content array without a `.content` wrapper.
  * Icon helpers return SVG strings or search results, not MCP content.
  */
 export const paperExecutorPreamble = [
@@ -25,7 +25,7 @@ export const paperExecutorPreamble = [
 	"  const data = __unwrap(res);",
 	"  if (data.isError === true) throw new Error(__paperText(data.content));",
 	"  if ('structuredContent' in data) return data.structuredContent;",
-	"  if (data.content.every((item) => item.type === 'text')) return __paperText(data.content);",
+	"  if (data.content.length === 1 && data.content[0].type === 'text') return data.content[0].text;",
 	"  return data.content;",
 	"};",
 	"const paper = new Proxy({}, {",

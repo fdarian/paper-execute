@@ -4,13 +4,13 @@ MCP stdio server exposing one tool: `paper_execute`. The agent writes async Type
 
 ## `paper_execute` — what the agent writes
 
-The `code` you pass runs in the sandbox with these globals (all async):
+The `code` you pass runs in the sandbox with these globals (tool calls are async):
 
-- `paper.<tool>(args)` — every Paper MCP tool (`write_html`, `open_file`, `create_artboard`, `get_selection`, `find_nodes`, `finish_working_on_nodes`, …). Throws on failure. Returns `structuredContent` when present; otherwise newline-joined text if every content item is text, or the content array unchanged for mixed/non-text items. Text is never JSON-parsed. There is no `.content` wrapper.
+- `paper.<tool>(args)` — every Paper MCP tool (`write_html`, `open_file`, `create_artboard`, `get_selection`, `find_nodes`, `finish_working_on_nodes`, …). Throws on failure. Returns `structuredContent` when present; otherwise a string for exactly one text item, or the content array unchanged for anything else. Text is never JSON-parsed. There is no `.content` wrapper.
 - `icon_get(name)` — returns embeddable Phosphor SVG markup as a string.
 - `icon_search(query)` — returns candidate icon matches.
-- Whatever your code `return`s is sent back as the tool result.
-- `emit(item)` — collects an individual item in the executor's output. This server reports only the emitted-item count; it does not deliver emitted images. Return an MCP content array to deliver images to the client.
+- Returned strings are sent as text; other returned values, including content arrays, are JSON-stringified.
+- `emit(item)` — sends an individual MCP content block (or a plain value rendered as text) to the client. Emitted items come first, followed by returned text. Use this path to deliver images; returning an image content array does not deliver native images.
 
 Given a known `targetNodeId`:
 
@@ -26,7 +26,7 @@ await paper.finish_working_on_nodes({ nodeIds: [targetNodeId] });
 
 ### Tree text and screenshots
 
-`get_tree_summary` returns two text blocks upstream: file metadata (`file`, `contentHash`) and the tree payload (`summary`, `nodeId`, `depth`). The helper joins both JSON strings with a newline. The result is a string, not an object with `.content`, and not a single JSON document.
+`get_tree_summary` returns two text blocks upstream: file metadata (`file`, `contentHash`) and the tree payload (`summary`, `nodeId`, `depth`). Both blocks remain in the returned array: `t[0].text` contains metadata and `t[1].text` contains the tree payload. Neither text is JSON-parsed.
 
 Existing code that collects screenshot images with `emit` must iterate the returned array directly:
 
@@ -34,14 +34,10 @@ Existing code that collects screenshot images with `emit` must iterate the retur
 const t = await paper.get_tree_summary({ fileId, nodeId: "73N-0", depth: 2 });
 const s = await paper.get_screenshot({ fileId, nodeId: "65V-0" });
 for (const c of s) if (c.type === "image") emit(c);
-return t;
+return t[1].text;
 ```
 
-This returns joined tree text plus an emitted-item count, **not the images**. To deliver the screenshot content to the client instead:
-
-```ts
-return await paper.get_screenshot({ fileId, nodeId: "65V-0" });
-```
+This delivers the screenshot image items followed by the tree payload text.
 
 Requires the Paper desktop app running (its MCP defaults to `http://127.0.0.1:29979/mcp`; override with `PAPER_MCP_URL`).
 

@@ -8,7 +8,7 @@ import { Effect } from "effect";
 
 import { createPaperExecuteServer } from "#/mcp/server";
 
-test("MCP client receives images, text, and ordinary values through QuickJS", async () => {
+test("MCP client receives emitted content before returned text through QuickJS", async () => {
 	const executor = await Effect.runPromise(
 		createExecutor({ tenant: Tenant.make("test"), plugins: [], onElicitation: "accept-all" }),
 	);
@@ -24,19 +24,48 @@ test("MCP client receives images, text, and ordinary values through QuickJS", as
 		const text = { type: "text", text: "caption" };
 		const result = await client.callTool({
 			name: "paper_execute",
-			arguments: { code: `return ${JSON.stringify([image, text])};` },
+			arguments: { code: `emit(${JSON.stringify(image)}); return "caption";` },
 		});
 		expect(result.content).toEqual([image, text]);
 		const logged = await client.callTool({
 			name: "paper_execute",
-			arguments: { code: `console.log("checkpoint"); return ${JSON.stringify([image])};` },
+			arguments: { code: `console.log("checkpoint"); emit(${JSON.stringify(image)});` },
 		});
 		expect(logged.content).toEqual([image, { type: "text", text: "Logs:\n[log] checkpoint" }]);
 		const empty = await client.callTool({
 			name: "paper_execute",
 			arguments: { code: "return [];" },
 		});
-		expect(empty.content).toEqual([]);
+		expect(empty.content).toEqual([{ type: "text", text: "[]" }]);
+		const returnedArray = await client.callTool({
+			name: "paper_execute",
+			arguments: { code: `return ${JSON.stringify([image, text])};` },
+		});
+		expect(returnedArray.content).toEqual([
+			{ type: "text", text: JSON.stringify([image, text], null, 2) },
+		]);
+		const emittedAndReturned = await client.callTool({
+			name: "paper_execute",
+			arguments: { code: `emit(${JSON.stringify(image)}); return ${JSON.stringify([image])};` },
+		});
+		expect(emittedAndReturned.content).toEqual([
+			image,
+			{ type: "text", text: JSON.stringify([image], null, 2) },
+		]);
+		const emittedOnly = await client.callTool({
+			name: "paper_execute",
+			arguments: { code: `emit(${JSON.stringify(image)});` },
+		});
+		expect(emittedOnly.content).toEqual([image]);
+		const plainEmission = await client.callTool({
+			name: "paper_execute",
+			arguments: { code: 'emit("first"); emit("second"); return "last";' },
+		});
+		expect(plainEmission.content).toEqual([
+			{ type: "text", text: "first" },
+			{ type: "text", text: "second" },
+			{ type: "text", text: "last" },
+		]);
 		const plain = await client.callTool({
 			name: "paper_execute",
 			arguments: { code: 'return "guide text";' },

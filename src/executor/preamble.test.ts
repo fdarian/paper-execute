@@ -15,21 +15,21 @@ function execute(result: unknown, code = "return await paper.example({});") {
 	});
 }
 
-test("Paper text is joined without parsing JSON", async () => {
+test("exactly one Paper text item returns its string without parsing JSON", async () => {
 	expect(await execute({ ok: true, data: { content: [{ type: "text", text: '{"x":1}' }] } })).toBe(
 		'{"x":1}',
 	);
+});
+
+test("multiple Paper text items remain an unchanged content array", async () => {
+	const content = [
+		{ type: "text", text: "metadata" },
+		{ type: "text", text: "tree" },
+	];
+	expect(await execute({ ok: true, data: { content } })).toBe(content);
 	expect(
-		await execute({
-			ok: true,
-			data: {
-				content: [
-					{ type: "text", text: "one" },
-					{ type: "text", text: "two" },
-				],
-			},
-		}),
-	).toBe("one\ntwo");
+		await execute({ ok: true, data: { content } }, "return (await paper.example({}))[1].text;"),
+	).toBe("tree");
 });
 
 test("structuredContent takes precedence over text", async () => {
@@ -42,8 +42,9 @@ test("structuredContent takes precedence over text", async () => {
 	expect(await execute({ ok: true, data: { structuredContent: {}, content: [] } })).toEqual({});
 });
 
-test("empty text content becomes an empty string", async () => {
-	expect(await execute({ ok: true, data: { content: [] } })).toBe("");
+test("empty content remains an unchanged array", async () => {
+	const content: unknown[] = [];
+	expect(await execute({ ok: true, data: { content } })).toBe(content);
 });
 
 test("mixed content remains unchanged", async () => {
@@ -51,6 +52,11 @@ test("mixed content remains unchanged", async () => {
 		{ type: "text", text: "screenshot" },
 		{ type: "image", data: "aGVsbG8=", mimeType: "image/png" },
 	];
+	expect(await execute({ ok: true, data: { content } })).toBe(content);
+});
+
+test("a single non-text item remains an unchanged content array", async () => {
+	const content = [{ type: "image", data: "aGVsbG8=", mimeType: "image/png" }];
 	expect(await execute({ ok: true, data: { content } })).toBe(content);
 });
 
