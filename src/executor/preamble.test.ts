@@ -1,0 +1,77 @@
+import { expect, test } from "bun:test";
+import { runInNewContext } from "node:vm";
+
+import { paperExecutorPreamble } from "#/executor/preamble";
+
+function execute(result: unknown, code = "return await paper.example({});") {
+	return runInNewContext(`(async () => { ${paperExecutorPreamble}\n${code} })()`, {
+		tools: {
+			paper: { org: { default: { example: async () => result } } },
+			iconTools: {
+				icon_get: async () => ({ ok: true, data: { svg: "<svg/>" } }),
+				icon_search: async () => ({ ok: true, data: { results: ["acorn"] } }),
+			},
+		},
+	});
+}
+
+test("Paper text is joined without parsing JSON", async () => {
+	expect(await execute({ ok: true, data: { content: [{ type: "text", text: '{"x":1}' }] } })).toBe(
+		'{"x":1}',
+	);
+	expect(
+		await execute({
+			ok: true,
+			data: {
+				content: [
+					{ type: "text", text: "one" },
+					{ type: "text", text: "two" },
+				],
+			},
+		}),
+	).toBe("one\ntwo");
+});
+
+test("structuredContent takes precedence over text", async () => {
+	expect(
+		await execute({
+			ok: true,
+			data: { structuredContent: { x: 1 }, content: [{ type: "text", text: "ignored" }] },
+		}),
+	).toEqual({ x: 1 });
+	expect(await execute({ ok: true, data: { structuredContent: {}, content: [] } })).toEqual({});
+});
+
+test("empty text content becomes an empty string", async () => {
+	expect(await execute({ ok: true, data: { content: [] } })).toBe("");
+});
+
+test("mixed content remains unchanged", async () => {
+	const content = [
+		{ type: "text", text: "screenshot" },
+		{ type: "image", data: "aGVsbG8=", mimeType: "image/png" },
+	];
+	expect(await execute({ ok: true, data: { content } })).toBe(content);
+});
+
+test("raw and plugin-normalized Paper failures use all text blocks", async () => {
+	const content = [
+		{ type: "text", text: "one" },
+		{ type: "image", data: "aGVsbG8=", mimeType: "image/png" },
+		{ type: "text", text: "two" },
+	];
+	await expect(
+		execute({ ok: true, data: { isError: true, structuredContent: { ignored: true }, content } }),
+	).rejects.toThrow("one\ntwo");
+	await expect(
+		execute({ ok: false, error: { message: "one", details: { content } } }),
+	).rejects.toThrow("one\ntwo");
+	await expect(execute({ ok: false, error: { message: "transport failed" } })).rejects.toThrow(
+		"transport failed",
+	);
+});
+
+test("icon helpers keep their existing unwrapping", async () => {
+	expect(await execute(undefined, 'return await icon_get("acorn");')).toBe("<svg/>");
+	expect(await execute(undefined, 'return await icon_search("acorn");')).toEqual(["acorn"]);
+});
