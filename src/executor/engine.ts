@@ -14,7 +14,9 @@ import {
 import { Effect } from "effect";
 
 import { PaperExecutorError } from "#/errors";
-import { iconToolsPlugin } from "#/icons/plugin";
+import { discoverPluginConfig } from "#/plugin/config";
+import { loadPlugins } from "#/plugin/loader";
+import { createPluginRegistry, type PaperPluginRegistry } from "#/plugin/registry";
 
 const defaultPaperMcpUrl = "http://127.0.0.1:29979/mcp";
 
@@ -37,11 +39,21 @@ function makeMemoryCredentialProvider(): CredentialProvider {
 	};
 }
 
-export function buildExecutionEngine(paperMcpUrl: string = defaultPaperMcpUrl) {
+export type PaperExecutionRuntime = {
+	readonly engine: ReturnType<typeof createExecutionEngine>;
+	readonly pluginRegistry: PaperPluginRegistry;
+};
+
+export function buildExecutionEngine() {
 	return Effect.gen(function* () {
+		const pluginConfigResult = yield* discoverPluginConfig();
+		const pluginConfig = pluginConfigResult.config;
+		const plugins = yield* loadPlugins(pluginConfig.plugins);
+		const pluginRegistry = yield* createPluginRegistry(plugins);
+		const paperMcpUrl = pluginConfig.paperMcpUrl ?? process.env.PAPER_MCP_URL ?? defaultPaperMcpUrl;
 		const executor = yield* createExecutor({
 			tenant: Tenant.make("paper-execute"),
-			plugins: [mcpPlugin(), iconToolsPlugin()],
+			plugins: [mcpPlugin(), pluginRegistry.executorPlugin()],
 			providers: [makeMemoryCredentialProvider()],
 			onElicitation: "accept-all",
 		});
@@ -73,10 +85,13 @@ export function buildExecutionEngine(paperMcpUrl: string = defaultPaperMcpUrl) {
 			),
 		);
 
-		return createExecutionEngine({
-			executor,
-			codeExecutor: makeQuickJsExecutor({ timeoutMs: 30_000 }),
-		});
+		return {
+			engine: createExecutionEngine({
+				executor,
+				codeExecutor: makeQuickJsExecutor({ timeoutMs: 30_000 }),
+			}),
+			pluginRegistry,
+		};
 	}).pipe(
 		Effect.mapError(
 			(cause) => new PaperExecutorError({ reason: "Failed to build execution engine", cause }),

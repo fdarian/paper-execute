@@ -7,13 +7,15 @@ import { Effect } from "effect";
 import { buildExecutionEngine } from "#/executor/engine";
 import { createPaperExecuteServer } from "#/mcp/server";
 
-const paperMcpUrl = process.env.PAPER_MCP_URL ?? "http://127.0.0.1:29979/mcp";
-
-const program = buildExecutionEngine(paperMcpUrl).pipe(
-	Effect.flatMap((engine) =>
+const program = buildExecutionEngine().pipe(
+	Effect.flatMap((runtime) =>
 		Effect.tryPromise({
 			try: async () => {
-				const server = createPaperExecuteServer(engine);
+				const server = createPaperExecuteServer(
+					runtime.engine,
+					runtime.pluginRegistry.docsText,
+					runtime.pluginRegistry.preambleSource,
+				);
 				const transport = new StdioServerTransport();
 				await server.connect(transport);
 				await Effect.runPromise(Effect.never);
