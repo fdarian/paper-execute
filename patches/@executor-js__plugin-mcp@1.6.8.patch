@@ -1,0 +1,49 @@
+diff --git a/dist/chunk-BVZDTZC2.js b/dist/chunk-BVZDTZC2.js
+index b7ea13766d86c10136e94a2c530259dfa89cd309..a421ac438eda882866fbffaa9b6f453f883491a4 100644
+--- a/dist/chunk-BVZDTZC2.js
++++ b/dist/chunk-BVZDTZC2.js
+@@ -9,7 +9,7 @@ var McpConnectionFailureKind = Schema.Literals([
+   "http",
+   "protocol"
+ ]);
+-var McpConnectionError = class extends Schema.TaggedErrorClass()(
++var McpConnectionError = class extends Schema.TaggedError()(
+   "McpConnectionError",
+   {
+     transport: Schema.String,
+@@ -30,7 +30,7 @@ var McpConnectionError = class extends Schema.TaggedErrorClass()(
+   { httpApiStatus: 400 }
+ ) {
+ };
+-var McpToolDiscoveryError = class extends Schema.TaggedErrorClass()(
++var McpToolDiscoveryError = class extends Schema.TaggedError()(
+   "McpToolDiscoveryError",
+   {
+     stage: Schema.Literals(["connect", "list_tools"]),
+@@ -63,7 +63,7 @@ var McpOAuthReauthorizationRequired = class extends Data.TaggedError(
+ };
+ var McpInsufficientScopeError = class extends Data.TaggedError("McpInsufficientScopeError") {
+ };
+-var McpOAuthError = class extends Schema.TaggedErrorClass()(
++var McpOAuthError = class extends Schema.TaggedError()(
+   "McpOAuthError",
+   {
+     message: Schema.String
+diff --git a/dist/chunk-DXHPM4QC.js b/dist/chunk-DXHPM4QC.js
+index 00d513b4ea1dfee8c99e1a5370ee5e04af9752b2..804e59f2a62414f9bd5ea673fac6c03c602ece37 100644
+--- a/dist/chunk-DXHPM4QC.js
++++ b/dist/chunk-DXHPM4QC.js
+@@ -643,11 +643,11 @@ var CONNECTION_ATTEMPT_SUMMARIES = {
+   connection_refused: "connection refused",
+   protocol: "unsupported protocol response"
+ };
+-var McpHttpTransportError = class extends Schema3.TaggedErrorClass()(
++var McpHttpTransportError = class extends Schema3.TaggedError()(
+   "McpHttpTransportError",
+   {
+     failureKind: McpConnectionFailureKind,
+-    cause: Schema3.Defect
++    cause: Schema3.Defect()
+   }
+ ) {
+ };

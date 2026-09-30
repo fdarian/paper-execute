@@ -4,9 +4,9 @@
  * agents get a thrown error on failure. Paper calls return structuredContent
  * when present, otherwise a string (without JSON parsing) for exactly one text
  * block, otherwise the content array without a `.content` wrapper.
- * Icon helpers return SVG strings or search results, not MCP content.
+ * Plugin helpers unwrap only the executor envelope, not MCP content.
  */
-export const paperExecutorPreamble = [
+const paperExecutorPreamble = [
 	"const __unwrap = (res) => {",
 	"  if (res && typeof res === 'object' && 'ok' in res) {",
 	"    if (!res.ok) {",
@@ -31,6 +31,8 @@ export const paperExecutorPreamble = [
 	"const paper = new Proxy({}, {",
 	"  get: (_t, name) => (...args) => Promise.resolve(tools.paper.org.default[name](...args)).then(__unwrapPaper),",
 	"});",
-	"const icon_search = (a) => Promise.resolve(tools.iconTools.icon_search(typeof a === 'string' ? { query: a } : a)).then(__unwrap).then((d) => d.results);",
-	"const icon_get = (a) => Promise.resolve(tools.iconTools.icon_get(typeof a === 'string' ? { query: a } : a)).then(__unwrap).then((d) => d.svg);",
 ].join("\n");
+
+export function buildPaperExecutorPreamble(pluginPreambleSource: string): string {
+	return `${paperExecutorPreamble}\n${pluginPreambleSource}`;
+}

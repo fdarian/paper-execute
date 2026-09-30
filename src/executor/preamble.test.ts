@@ -1,15 +1,21 @@
 import { expect, test } from "bun:test";
 import { runInNewContext } from "node:vm";
+import { Effect } from "effect";
 
-import { paperExecutorPreamble } from "#/executor/preamble";
+import { buildPaperExecutorPreamble } from "#/executor/preamble";
+import { iconPlugin } from "#/icons/plugin";
+import { createPluginRegistry } from "#/plugin/registry";
+
+const pluginRegistry = Effect.runSync(createPluginRegistry([iconPlugin]));
+const paperExecutorPreamble = buildPaperExecutorPreamble(pluginRegistry.preambleSource);
 
 function execute(result: unknown, code = "return await paper.example({});") {
 	return runInNewContext(`(async () => { ${paperExecutorPreamble}\n${code} })()`, {
 		tools: {
 			paper: { org: { default: { example: async () => result } } },
-			iconTools: {
-				icon_get: async () => ({ ok: true, data: { svg: "<svg/>" } }),
-				icon_search: async () => ({ ok: true, data: { results: ["acorn"] } }),
+			paperPluginTools: {
+				plugin__icon__get: async () => ({ ok: true, data: "<svg/>" }),
+				plugin__icon__search: async () => ({ ok: true, data: ["acorn"] }),
 			},
 		},
 	});
@@ -78,6 +84,6 @@ test("raw and plugin-normalized Paper failures use all text blocks", async () =>
 });
 
 test("icon helpers keep their existing unwrapping", async () => {
-	expect(await execute(undefined, 'return await icon_get("acorn");')).toBe("<svg/>");
-	expect(await execute(undefined, 'return await icon_search("acorn");')).toEqual(["acorn"]);
+	expect(await execute(undefined, 'return await plugins.icon.get("acorn");')).toBe("<svg/>");
+	expect(await execute(undefined, 'return await plugins.icon.search("acorn");')).toEqual(["acorn"]);
 });

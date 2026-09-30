@@ -1,10 +1,10 @@
-import { definePlugin, type StaticToolSchema, tool } from "@executor-js/sdk/core";
 import { icons, type PhosphorIcon } from "@phosphor-icons/core";
 import { Effect, Schema } from "effect";
 import MiniSearch from "minisearch";
 
 import { IconSearchError } from "#/errors";
-import { type IconWeight, iconWeights, readIconSvg } from "#/icons/svg";
+import { readIconSvg } from "#/icons/svg";
+import { definePaperPlugin } from "#/plugin/define";
 
 type IconRecord = {
 	readonly name: string;
@@ -17,37 +17,26 @@ type IconSearchDocument = {
 	readonly text: string;
 };
 
-const schemaToStandard = <A, I>(schema: Schema.Decoder<A, I>): StaticToolSchema<A, I> =>
-	Schema.toStandardSchemaV1(Schema.toStandardJSONSchemaV1(schema) as never) as StaticToolSchema<
-		A,
-		I
-	>;
+const IconSearchInput = Schema.toStandardSchemaV1(Schema.String);
 
-const IconSearchInput = Schema.Struct({
-	query: Schema.String,
-	limit: Schema.optional(Schema.Number),
-});
-
-const IconSearchOutput = Schema.Struct({
-	results: Schema.Array(
+const IconSearchOutput = Schema.toStandardSchemaV1(
+	Schema.Array(
 		Schema.Struct({
 			name: Schema.String,
 			pascal_name: Schema.String,
 			tags: Schema.Array(Schema.String),
 		}),
 	),
-});
+);
 
-const IconGetInput = Schema.Struct({
-	query: Schema.String,
-	weight: Schema.optional(Schema.String),
-	size: Schema.optional(Schema.Number),
-	color: Schema.optional(Schema.String),
-});
+const IconGetInput = Schema.toStandardSchemaV1(Schema.String);
 
-const IconGetOutput = Schema.Struct({
-	name: Schema.String,
-	svg: Schema.String,
+const IconGetOutput = Schema.toStandardSchemaV1(Schema.String);
+
+export const iconPlugin = definePaperPlugin({
+	name: "icon",
+	docs: "Phosphor icon helpers. `plugins.icon.get(name)` returns SVG markup. `plugins.icon.search(query)` returns candidate icon matches.",
+	tools: buildIconTools(),
 });
 
 function buildSearchText(icon: PhosphorIcon): string {
@@ -56,19 +45,7 @@ function buildSearchText(icon: PhosphorIcon): string {
 	return [icon.name, icon.pascal_name, ...icon.tags, aliasText].join(" ").trim();
 }
 
-function resolveWeight(weight: string | undefined): IconWeight {
-	if (weight === undefined) {
-		return "regular";
-	}
-	for (const value of iconWeights) {
-		if (value === weight) {
-			return value;
-		}
-	}
-	return "regular";
-}
-
-export const iconToolsPlugin = definePlugin(() => {
+function buildIconTools() {
 	const iconByName = new Map<string, IconRecord>();
 	const index = new MiniSearch<IconSearchDocument>({
 		fields: ["text"],
@@ -96,53 +73,43 @@ export const iconToolsPlugin = definePlugin(() => {
 	}
 
 	return {
-		id: "icon-tools" as const,
-		packageName: "paper-execute",
-		storage: () => ({}),
-		extension: () => ({}),
-		staticSources: () => [
-			{
-				id: "iconTools",
-				kind: "custom",
-				name: "Icon Tools",
-				tools: [
-					tool({
-						name: "icon_search",
-						description: "Search Phosphor icons by name, PascalCase name, and tags.",
-						inputSchema: schemaToStandard(IconSearchInput),
-						outputSchema: schemaToStandard(IconSearchOutput),
-						execute: (input: typeof IconSearchInput.Type) =>
-							Effect.sync(() => {
-								const limit = input.limit ?? 8;
-								return { results: searchIcons(input.query, limit) };
-							}),
-					}),
-					tool({
-						name: "icon_get",
-						description: "Find the best matching Phosphor icon and return embed-ready SVG markup.",
-						inputSchema: schemaToStandard(IconGetInput),
-						outputSchema: schemaToStandard(IconGetOutput),
-						execute: (input: typeof IconGetInput.Type) =>
-							Effect.gen(function* () {
-								const matches = searchIcons(input.query, 1);
-								const match = matches[0];
-								if (match === undefined) {
-									return yield* new IconSearchError({
-										query: input.query,
-										reason: "No matching icon found",
-									});
-								}
-								const svg = yield* readIconSvg({
-									name: match.name,
-									weight: resolveWeight(input.weight),
-									size: input.size,
-									color: input.color,
-								});
-								return { name: match.name, svg };
-							}),
-					}),
-				],
-			},
-		],
+		search: {
+			input: IconSearchInput,
+			output: IconSearchOutput,
+			execute: (query: unknown) =>
+				Effect.sync(() => {
+					if (typeof query !== "string") {
+						return [];
+					}
+					return searchIcons(query, 8);
+				}),
+		},
+		get: {
+			input: IconGetInput,
+			output: IconGetOutput,
+			execute: (query: unknown) =>
+				Effect.gen(function* () {
+					if (typeof query !== "string") {
+						return yield* new IconSearchError({
+							query: String(query),
+							reason: "Query must be a string",
+						});
+					}
+					const matches = searchIcons(query, 1);
+					const match = matches[0];
+					if (match === undefined) {
+						return yield* new IconSearchError({
+							query,
+							reason: "No matching icon found",
+						});
+					}
+					return yield* readIconSvg({
+						name: match.name,
+						weight: "regular",
+						size: undefined,
+						color: undefined,
+					});
+				}),
+		},
 	};
-});
+}

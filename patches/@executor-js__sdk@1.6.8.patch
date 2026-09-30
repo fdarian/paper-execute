@@ -1,0 +1,216 @@
+diff --git a/dist/chunk-4EVSYRTD.js b/dist/chunk-4EVSYRTD.js
+index c344988a4dd51da0ad426cbb72e2d4a1081b594f..d0530d45ab162aafbe648d573eb7ce6765dc8401 100644
+--- a/dist/chunk-4EVSYRTD.js
++++ b/dist/chunk-4EVSYRTD.js
+@@ -504,7 +504,7 @@ var ElicitationResponse = Schema3.Struct({
+   /** Present when `action` is "accept" — the data the user provided. */
+   content: Schema3.optional(Schema3.Record(Schema3.String, Schema3.Unknown))
+ });
+-var ElicitationDeclinedError = class extends Schema3.TaggedErrorClass()(
++var ElicitationDeclinedError = class extends Schema3.TaggedError()(
+   "ElicitationDeclinedError",
+   {
+     address: ToolAddress,
+@@ -557,7 +557,7 @@ var rowToArtifact = (row) => ({
+ // src/errors.ts
+ import { Schema as Schema5 } from "effect";
+ var isUserActionableError = (value) => typeof value === "object" && value !== null && "__executorUserActionable" in value && value.__executorUserActionable === true && "userMessage" in value && typeof value.userMessage === "string" && value.userMessage.length > 0 && "code" in value && typeof value.code === "string" && value.code.length > 0;
+-var ToolNotFoundError = class extends Schema5.TaggedErrorClass()(
++var ToolNotFoundError = class extends Schema5.TaggedError()(
+   "ToolNotFoundError",
+   {
+     address: ToolAddress,
+@@ -572,7 +572,7 @@ var ToolNotFoundError = class extends Schema5.TaggedErrorClass()(
+     return this.reason === void 0 ? `Tool not found: ${this.address}` : `Tool not found: ${this.address} \u2014 ${this.reason}`;
+   }
+ };
+-var ToolInvocationError = class extends Schema5.TaggedErrorClass()(
++var ToolInvocationError = class extends Schema5.TaggedError()(
+   "ToolInvocationError",
+   {
+     address: ToolAddress,
+@@ -581,7 +581,7 @@ var ToolInvocationError = class extends Schema5.TaggedErrorClass()(
+   }
+ ) {
+ };
+-var ToolBlockedError = class extends Schema5.TaggedErrorClass()(
++var ToolBlockedError = class extends Schema5.TaggedError()(
+   "ToolBlockedError",
+   {
+     address: ToolAddress,
+@@ -592,7 +592,7 @@ var ToolBlockedError = class extends Schema5.TaggedErrorClass()(
+     return `Tool blocked by policy "${this.pattern}": ${this.address}`;
+   }
+ };
+-var PluginNotLoadedError = class extends Schema5.TaggedErrorClass()(
++var PluginNotLoadedError = class extends Schema5.TaggedError()(
+   "PluginNotLoadedError",
+   {
+     address: ToolAddress,
+@@ -603,7 +603,7 @@ var PluginNotLoadedError = class extends Schema5.TaggedErrorClass()(
+     return `Plugin "${this.pluginId}" is not loaded for tool: ${this.address}`;
+   }
+ };
+-var NoHandlerError = class extends Schema5.TaggedErrorClass()("NoHandlerError", {
++var NoHandlerError = class extends Schema5.TaggedError()("NoHandlerError", {
+   address: ToolAddress,
+   pluginId: Schema5.String
+ }) {
+@@ -611,7 +611,7 @@ var NoHandlerError = class extends Schema5.TaggedErrorClass()("NoHandlerError",
+     return `Plugin "${this.pluginId}" has no invokeTool handler for tool: ${this.address}`;
+   }
+ };
+-var IntegrationNotFoundError = class extends Schema5.TaggedErrorClass()(
++var IntegrationNotFoundError = class extends Schema5.TaggedError()(
+   "IntegrationNotFoundError",
+   { slug: IntegrationSlug }
+ ) {
+@@ -619,7 +619,7 @@ var IntegrationNotFoundError = class extends Schema5.TaggedErrorClass()(
+     return `Integration not found: ${this.slug}`;
+   }
+ };
+-var IntegrationAlreadyExistsError = class extends Schema5.TaggedErrorClass()(
++var IntegrationAlreadyExistsError = class extends Schema5.TaggedError()(
+   "IntegrationAlreadyExistsError",
+   { slug: IntegrationSlug },
+   { httpApiStatus: 409 }
+@@ -628,7 +628,7 @@ var IntegrationAlreadyExistsError = class extends Schema5.TaggedErrorClass()(
+     return `Integration already exists: ${this.slug}`;
+   }
+ };
+-var IntegrationRemovalNotAllowedError = class extends Schema5.TaggedErrorClass()(
++var IntegrationRemovalNotAllowedError = class extends Schema5.TaggedError()(
+   "IntegrationRemovalNotAllowedError",
+   { slug: IntegrationSlug }
+ ) {
+@@ -636,7 +636,7 @@ var IntegrationRemovalNotAllowedError = class extends Schema5.TaggedErrorClass()
+     return `Integration cannot be removed (declared statically by a plugin): ${this.slug}`;
+   }
+ };
+-var OrgWriteDeniedError = class extends Schema5.TaggedErrorClass()(
++var OrgWriteDeniedError = class extends Schema5.TaggedError()(
+   "OrgWriteDeniedError",
+   {},
+   { httpApiStatus: 403 }
+@@ -650,7 +650,7 @@ var OrgWriteDeniedError = class extends Schema5.TaggedErrorClass()(
+     return this.message;
+   }
+ };
+-var ConnectionNotFoundError = class extends Schema5.TaggedErrorClass()(
++var ConnectionNotFoundError = class extends Schema5.TaggedError()(
+   "ConnectionNotFoundError",
+   {
+     owner: Owner,
+@@ -662,7 +662,7 @@ var ConnectionNotFoundError = class extends Schema5.TaggedErrorClass()(
+     return `Connection not found: ${this.integration}.${this.owner}.${this.name}`;
+   }
+ };
+-var ConnectionAlreadyExistsError = class extends Schema5.TaggedErrorClass()(
++var ConnectionAlreadyExistsError = class extends Schema5.TaggedError()(
+   "ConnectionAlreadyExistsError",
+   {
+     owner: Owner,
+@@ -675,12 +675,12 @@ var ConnectionAlreadyExistsError = class extends Schema5.TaggedErrorClass()(
+     return `A connection named "${this.name}" already exists for ${this.integration} (${this.owner}). Choose a different name, or remove the existing connection first.`;
+   }
+ };
+-var InvalidConnectionInputError = class extends Schema5.TaggedErrorClass()(
++var InvalidConnectionInputError = class extends Schema5.TaggedError()(
+   "InvalidConnectionInputError",
+   { message: Schema5.String }
+ ) {
+ };
+-var CredentialProviderNotRegisteredError = class extends Schema5.TaggedErrorClass()(
++var CredentialProviderNotRegisteredError = class extends Schema5.TaggedError()(
+   "CredentialProviderNotRegisteredError",
+   { provider: ProviderKey }
+ ) {
+@@ -688,7 +688,7 @@ var CredentialProviderNotRegisteredError = class extends Schema5.TaggedErrorClas
+     return `Credential provider not registered: ${this.provider}`;
+   }
+ };
+-var CredentialResolutionError = class extends Schema5.TaggedErrorClass()(
++var CredentialResolutionError = class extends Schema5.TaggedError()(
+   "CredentialResolutionError",
+   {
+     owner: Owner,
+@@ -721,7 +721,7 @@ var CredentialResolutionError = class extends Schema5.TaggedErrorClass()(
+   }
+ ) {
+ };
+-var ArtifactNotFoundError = class extends Schema5.TaggedErrorClass()(
++var ArtifactNotFoundError = class extends Schema5.TaggedError()(
+   "ArtifactNotFoundError",
+   { id: ArtifactId }
+ ) {
+@@ -782,7 +782,7 @@ var EnterpriseManagedStartInputSchema = Schema6.Struct({
+   identifier: "EnterpriseManagedStartInput",
+   description: "The second client registration (at the enterprise identity provider) and the identity assertion an enterprise-managed connect presents."
+ });
+-var OAuthStartError = class extends Schema6.TaggedErrorClass()("OAuthStartError", {
++var OAuthStartError = class extends Schema6.TaggedError()("OAuthStartError", {
+   message: Schema6.String,
+   /** True when an enterprise identity provider declined to authorize this
+    *  connection under administrator policy. A console MUST branch on this
+@@ -803,7 +803,7 @@ var OAuthStartError = class extends Schema6.TaggedErrorClass()("OAuthStartError"
+     return this.message;
+   }
+ };
+-var OAuthCompleteError = class extends Schema6.TaggedErrorClass()("OAuthCompleteError", {
++var OAuthCompleteError = class extends Schema6.TaggedError()("OAuthCompleteError", {
+   message: Schema6.String,
+   /** True when the auth-code exchange failed in a way the user must restart. */
+   restartRequired: Schema6.optional(Schema6.Boolean)
+@@ -814,7 +814,7 @@ var OAuthCompleteError = class extends Schema6.TaggedErrorClass()("OAuthComplete
+     return this.message;
+   }
+ };
+-var OAuthProbeError = class extends Schema6.TaggedErrorClass()("OAuthProbeError", {
++var OAuthProbeError = class extends Schema6.TaggedError()("OAuthProbeError", {
+   message: Schema6.String
+ }) {
+   __executorUserActionable = true;
+@@ -823,7 +823,7 @@ var OAuthProbeError = class extends Schema6.TaggedErrorClass()("OAuthProbeError"
+     return this.message;
+   }
+ };
+-var OAuthRegisterDynamicError = class extends Schema6.TaggedErrorClass()("OAuthRegisterDynamicError", {
++var OAuthRegisterDynamicError = class extends Schema6.TaggedError()("OAuthRegisterDynamicError", {
+   message: Schema6.String
+ }) {
+   __executorUserActionable = true;
+@@ -832,7 +832,7 @@ var OAuthRegisterDynamicError = class extends Schema6.TaggedErrorClass()("OAuthR
+     return this.message;
+   }
+ };
+-var OAuthSessionNotFoundError = class extends Schema6.TaggedErrorClass()(
++var OAuthSessionNotFoundError = class extends Schema6.TaggedError()(
+   "OAuthSessionNotFoundError",
+   { state: OAuthState }
+ ) {
+diff --git a/dist/chunk-N26OL26P.js b/dist/chunk-N26OL26P.js
+index 33c351986963eeebf6d9b6d8dd75104541a54ba8..8fb8eb809d99ecd9ee421904b5fc504fd821f03c 100644
+--- a/dist/chunk-N26OL26P.js
++++ b/dist/chunk-N26OL26P.js
+@@ -557,7 +557,7 @@ var isOAuthPopupResult = (value) => typeof value === "object" && value !== null
+ 
+ // src/api-errors.ts
+ import { Schema as Schema2 } from "effect";
+-var InternalError = class extends Schema2.TaggedErrorClass()(
++var InternalError = class extends Schema2.TaggedError()(
+   "InternalError",
+   {
+     /** Opaque correlation id for backend lookup (Sentry event id, log line, etc.). */
+diff --git a/dist/host-internal.js b/dist/host-internal.js
+index 9d9338207c8840288090bda495309e6cf7d70e90..e7b0dec68f5adcf6368ecf0b7447fe23d99621c4 100644
+--- a/dist/host-internal.js
++++ b/dist/host-internal.js
+@@ -13,7 +13,7 @@ import "./chunk-7D4SUZUM.js";
+ // src/hosted-http-client.ts
+ import { Effect, Layer, Schema } from "effect";
+ import { FetchHttpClient, Headers as HttpHeaders, HttpClient } from "effect/unstable/http";
+-var HostedOutboundRequestBlocked = class extends Schema.TaggedErrorClass()(
++var HostedOutboundRequestBlocked = class extends Schema.TaggedError()(
+   "HostedOutboundRequestBlocked",
+   {
+     url: Schema.String,
