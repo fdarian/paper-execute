@@ -21,8 +21,8 @@ const paperInstructions = [
 	"Paper is a professional design tool for creating user interfaces. The user is working on a 2D canvas composing designs.",
 	"The Paper MCP server gives you tools to be a talented designer for web and mobile apps and websites. You can read designs from the user's file, see what the user is doing, and write HTML back into the design as new nodes.",
 	"",
-	"Inside `execute`, call Paper APIs with `await paper.<tool>(args)`. Paper calls throw on failure and return structuredContent when present, otherwise a string for exactly one text item (never JSON-parsed), otherwise the content array unchanged. There is no `.content` wrapper. Plugin calls return their bare data and throw on failure; use raw `tools.*` only for the executor workflow below.",
-	"For screenshots: `const s = await paper.get_screenshot({ fileId, nodeId }); for (const c of s) if (c.type === 'image') emit(c);`. Tree summaries keep both text blocks: `const t = await paper.get_tree_summary({ fileId, nodeId, depth: 2 }); return JSON.parse(t[1].text).summary;`.",
+	"Inside `execute`, call Paper APIs with `await paper.<tool>(args)`. Paper calls throw on failure and return structuredContent when present; otherwise, nonempty all-text content whose blocks each parse as JSON objects with no shared keys returns their shallow merge (including a single JSON-object block). Invalid JSON, arrays/null/primitives, key collisions, or non-text blocks fall back to a string for exactly one text item, otherwise the unchanged content array. There is no `.content` wrapper. Plugin calls return their bare data and throw on failure; use raw `tools.*` only for the executor workflow below.",
+	"For screenshots: `const s = await paper.get_screenshot({ fileId, nodeId }); for (const c of s) if (c.type === 'image') emit(c);`. Tree summaries: `const t = await paper.get_tree_summary({ fileId, nodeId, depth: 2 }); return t.summary;`. Find nodes: `const f = await paper.find_nodes({ fileId, textValue: 'Submit' }); return f.nodes;`.",
 	"",
 	'You MUST load the full guide before other Paper tools: `await paper.get_guide({ topic: "paper-mcp-instructions" })`. Do this once per session; call again if a long thread may have dropped guide text.',
 	"",
@@ -250,8 +250,8 @@ export function createPaperExecuteServer<E extends Cause.YieldableError>(
 		{
 			description: [
 				"Execute TypeScript in a sandbox with Paper APIs and configured plugins. Await tool calls. `return` serializes values as text; `emit(value)` sends native MCP content or files. See server instructions for the workflow.",
-				"`paper.<tool>(args)` throws on failure and returns structuredContent when present; otherwise a string for exactly one text item (never JSON-parsed), or the unchanged content array. There is no `.content` wrapper. Plugins return their bare data.",
-				"Screenshots: `const s = await paper.get_screenshot({ fileId, nodeId }); for (const c of s) if (c.type === 'image') emit(c);`. Tree summaries: `const t = await paper.get_tree_summary({ fileId, nodeId, depth: 2 }); return JSON.parse(t[1].text).summary;`.",
+				"`paper.<tool>(args)` throws on failure and returns structuredContent when present; otherwise, nonempty all-text content whose blocks each parse as JSON objects with no shared keys returns their shallow merge (including a single JSON-object block). Invalid JSON, arrays/null/primitives, key collisions, or non-text blocks fall back to a string for exactly one text item, otherwise the unchanged content array. There is no `.content` wrapper. Plugins return their bare data.",
+				"Screenshots: `const s = await paper.get_screenshot({ fileId, nodeId }); for (const c of s) if (c.type === 'image') emit(c);`. Tree summaries: `const t = await paper.get_tree_summary({ fileId, nodeId, depth: 2 }); return t.summary;`. Find nodes: `const f = await paper.find_nodes({ fileId, textValue: 'Submit' }); return f.nodes;`.",
 			].join("\n"),
 			inputSchema: { code: z.string().min(1) },
 		},

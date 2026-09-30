@@ -6,7 +6,7 @@ MCP stdio server exposing one tool: `execute`. The agent writes async TypeScript
 
 The `code` you pass runs in the sandbox with these globals (all async):
 
-- `paper.<tool>(args)` — every Paper MCP tool (`write_html`, `open_file`, `create_artboard`, `get_selection`, `find_nodes`, `finish_working_on_nodes`, …). Throws on failure. Returns `structuredContent` when present; otherwise a string for exactly one text item, or the content array unchanged for anything else. Text is never JSON-parsed. There is no `.content` wrapper.
+- `paper.<tool>(args)` — every Paper MCP tool (`write_html`, `open_file`, `create_artboard`, `get_selection`, `find_nodes`, `finish_working_on_nodes`, …). Throws on failure. Returns `structuredContent` when present; otherwise, if there is at least one block and every block is text parsing to a JSON object with no shared keys, returns their shallow merge. A single JSON-object block also returns its parsed object. Invalid JSON, arrays/null/primitives, key collisions, or non-text blocks fall back to a string for exactly one text item, or the unchanged content array otherwise. There is no `.content` wrapper.
 - Start with `paper.get_basic_info({})` for file and page context. `find_nodes` is a filtered search, not page enumeration: pass `textValue` or a non-empty `filters` array; calling it with only `fileId` and `pageId` is invalid.
 - `plugins.<name>.*` — plugin namespaces generated from the configured plugin tool trees.
 - `plugins.icon.get(name)` — returns embeddable Phosphor SVG markup as a string.
@@ -26,15 +26,20 @@ await paper.write_html({
 await paper.finish_working_on_nodes({ nodeIds: [targetNodeId] });
 ```
 
-### Tree text and screenshots
+### Read results and screenshots
 
-`get_tree_summary` returns two text blocks upstream: file metadata (`file`, `contentHash`) and the tree payload (`summary`, `nodeId`, `depth`). Both blocks remain in the returned array: `t[0].text` contains metadata and `t[1].text` contains the tree payload as a JSON string. The helper does not JSON-parse either text; parse the tree payload in your snippet to return its readable `summary`.
+`get_tree_summary` returns two JSON-object text blocks upstream: file metadata (`file`, `contentHash`) and the tree payload (`summary`, `nodeId`, `depth`). The helper merges them so you can read `t.summary` directly. Similarly, `find_nodes` exposes `f.nodes` and `f.count` alongside file metadata. Screenshots contain image blocks, so they remain content arrays.
+
+```ts
+const f = await paper.find_nodes({ fileId, textValue: "Submit" });
+return f.nodes;
+```
 
 ```ts
 const t = await paper.get_tree_summary({ fileId, nodeId: "73N-0", depth: 2 });
 const s = await paper.get_screenshot({ fileId, nodeId: "65V-0" });
 for (const c of s) if (c.type === "image") emit(c);
-return JSON.parse(t[1].text).summary;
+return t.summary;
 ```
 
 This delivers the screenshot image items followed by the readable tree summary with actual line breaks.

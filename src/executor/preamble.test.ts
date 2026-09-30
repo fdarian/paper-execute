@@ -21,10 +21,75 @@ function execute(result: unknown, code = "return await paper.example({});") {
 	});
 }
 
-test("exactly one Paper text item returns its string without parsing JSON", async () => {
-	expect(await execute({ ok: true, data: { content: [{ type: "text", text: '{"x":1}' }] } })).toBe(
-		'{"x":1}',
+test("a single JSON-object text item returns its parsed object", async () => {
+	expect(
+		await execute({ ok: true, data: { content: [{ type: "text", text: '{"x":1}' }] } }),
+	).toEqual({ x: 1 });
+	expect(await execute({ ok: true, data: { content: [{ type: "text", text: "{}" }] } })).toEqual(
+		{},
 	);
+});
+
+test("Paper metadata and payload objects merge shallowly", async () => {
+	const content = [
+		{ type: "text", text: '{"file":{"id":"file-id"},"contentHash":"hash"}' },
+		{ type: "text", text: '{"nodes":[{"id":"node-id"}],"count":1}' },
+		{ type: "text", text: "{}" },
+	];
+	expect(await execute({ ok: true, data: { content } })).toEqual({
+		file: { id: "file-id" },
+		contentHash: "hash",
+		nodes: [{ id: "node-id" }],
+		count: 1,
+	});
+	expect(
+		await execute({ ok: true, data: { content } }, "return (await paper.example({})).nodes;"),
+	).toEqual([{ id: "node-id" }]);
+});
+
+test("duplicate top-level keys fall back even when their values match", async () => {
+	for (const text of ['{"x":1}', '{"x":2}']) {
+		const content = [
+			{ type: "text", text: '{"x":1}' },
+			{ type: "text", text },
+		];
+		expect(await execute({ ok: true, data: { content } })).toBe(content);
+	}
+});
+
+test("special object keys are preserved without changing the merged prototype", async () => {
+	const content = [
+		{ type: "text", text: '{"__proto__":{"polluted":true},"constructor":1}' },
+		{ type: "text", text: '{"toString":2}' },
+	];
+	expect(
+		await execute(
+			{ ok: true, data: { content } },
+			"const value = await paper.example({}); return [Object.keys(value), value.__proto__, value.polluted === undefined, Object.getPrototypeOf(value) === Object.prototype];",
+		),
+	).toEqual([["__proto__", "constructor", "toString"], { polluted: true }, true, true]);
+	const collision = [content[0], { type: "text", text: '{"__proto__":0}' }];
+	expect(await execute({ ok: true, data: { content: collision } })).toBe(collision);
+});
+
+test("non-object JSON and non-JSON text fall back to the existing rules", async () => {
+	for (const text of ["[]", "null", "1", "true", '"text"', "not JSON", "{"]) {
+		expect(await execute({ ok: true, data: { content: [{ type: "text", text }] } })).toBe(text);
+		const content = [
+			{ type: "text", text: '{"file":{}}' },
+			{ type: "text", text },
+		];
+		expect(await execute({ ok: true, data: { content } })).toBe(content);
+	}
+});
+
+test("unexpected parsing errors are not swallowed", async () => {
+	await expect(
+		execute(
+			{ ok: true, data: { content: [{ type: "text", text: "{}" }] } },
+			"JSON.parse = () => { throw new TypeError('unexpected'); }; return await paper.example({});",
+		),
+	).rejects.toThrow("unexpected");
 });
 
 test("multiple Paper text items remain an unchanged content array", async () => {
@@ -53,9 +118,9 @@ test("empty content remains an unchanged array", async () => {
 	expect(await execute({ ok: true, data: { content } })).toBe(content);
 });
 
-test("mixed content remains unchanged", async () => {
+test("mixed JSON-object text and image content remains unchanged", async () => {
 	const content = [
-		{ type: "text", text: "screenshot" },
+		{ type: "text", text: '{"file":{}}' },
 		{ type: "image", data: "aGVsbG8=", mimeType: "image/png" },
 	];
 	expect(await execute({ ok: true, data: { content } })).toBe(content);

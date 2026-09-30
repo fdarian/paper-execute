@@ -29,6 +29,23 @@ test("MCP client receives emitted content before returned text through QuickJS",
 	await server.connect(transports[0]);
 	await client.connect(transports[1]);
 	try {
+		const tools = await client.listTools();
+		expect(tools.tools[0]?.description).toContain("return t.summary;");
+		expect(tools.tools[0]?.description).toContain("return f.nodes;");
+		const merged = await client.callTool({
+			name: "execute",
+			arguments: {
+				code: 'return __unwrapPaper({ ok: true, data: { content: [{ type: "text", text: \'{"file":{},"contentHash":"hash"}\' }, { type: "text", text: \'{"summary":"tree","nodeId":"node","depth":2}\' }] } }).summary;',
+			},
+		});
+		expect(merged.content).toEqual([{ type: "text", text: "tree" }]);
+		const collision = await client.callTool({
+			name: "execute",
+			arguments: {
+				code: 'return __unwrapPaper({ ok: true, data: { content: [{ type: "text", text: \'{"x":1}\' }, { type: "text", text: \'{"x":2}\' }] } })[1].text;',
+			},
+		});
+		expect(collision.content).toEqual([{ type: "text", text: '{"x":2}' }]);
 		const image = { type: "image", data: "aGVsbG8=", mimeType: "image/png" };
 		const text = { type: "text", text: "caption" };
 		const result = await client.callTool({
