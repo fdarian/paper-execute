@@ -19,7 +19,7 @@ export type PaperPluginEntry = typeof PluginEntrySchema.Type;
 export type PaperPluginConfig = typeof PaperPluginConfigSchema.Type;
 
 export const defaultPluginConfig: PaperPluginConfig = {
-	plugins: ["icon"],
+	plugins: ["icon", "image"],
 };
 
 export function discoverPluginConfig(): Effect.Effect<

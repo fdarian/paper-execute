@@ -81,7 +81,7 @@ options), so JSON is the right fit.
 - **Entry forms**: `"pkg"`, `["pkg", options]` (plain config, never secrets), `"./local.ts"`
   (the loader `import()`s the path).
 - **Discovery**: local `./paper-execute.config.json` if present, else
-  `~/.config/paper-execute/config.json`, else a built-in default of `["icon"]` so the base
+  `~/.config/paper-execute/config.json`, else a built-in default of `["icon", "image"]` so the base
   experience works with zero config.
 - **Failure is per-plugin and loud**: a plugin that fails to load is skipped with a logged
   warning (same posture as the Paper-MCP-unreachable warning in `engine.ts`); its namespace
@@ -176,7 +176,7 @@ ever fill many fields at once.
 - **Call arity** — zero or one arg (`undefined | scalar | object`); array counts as one arg.
 - **No passthrough** — faker and friends are explicit curated maps, resolving proxy safety.
 - **Config** — JSON at `~/.config/paper-execute/config.json` or local override; JSON `$schema`
-  for autocomplete; `["icon"]` default.
+  for autocomplete; `["icon", "image"]` default.
 - **Schemas** — the author provides any Standard Schema (zod/Effect at launch). JSON Schema is
   never authored; paper-execute derives the form executor needs internally.
 - **`execute` return** — Effect, Promise, or plain value; all normalized.

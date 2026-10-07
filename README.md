@@ -1,6 +1,6 @@
 # paper-execute
 
-MCP stdio server exposing one tool: `execute`. The agent writes async TypeScript that runs in an [executor](https://github.com/RhysSullivan/executor) QuickJS sandbox wired to the [Paper](https://paper.design) MCP plus host-side plugins. The built-in default plugin is `plugins.icon.*`, so it can drive Paper programmatically and drop in icons without hand-writing SVG.
+MCP stdio server exposing one tool: `execute`. The agent writes async TypeScript that runs in an [executor](https://github.com/RhysSullivan/executor) QuickJS sandbox wired to the [Paper](https://paper.design) MCP plus host-side plugins. The built-in default plugins are `plugins.icon.*` and `plugins.image.*`, so it can drive Paper programmatically, drop in icons without hand-writing SVG, and place local images.
 
 ## `execute` — what the agent writes
 
@@ -11,6 +11,7 @@ The `code` you pass runs in the sandbox with these globals (all async):
 - `plugins.<name>.*` — plugin namespaces generated from the configured plugin tool trees.
 - `plugins.icon.get(name)` — returns embeddable Phosphor SVG markup as a string.
 - `plugins.icon.search(query)` — returns candidate icon matches.
+- `plugins.image.get(path)` — reads a local image (png, jpg, jpeg, gif, webp, svg, avif; leading `~` expands to the home directory) and returns a `data:<mime>;base64,...` URI. Throws for unknown extensions or unreadable files.
 - Returned strings are sent as text; other returned values, including content arrays, are JSON-stringified.
 - `emit(item)` sends an individual MCP content block, a plain value rendered as text, or a `ToolFile` rendered by MIME. Emitted items come first, followed by returned text. Use this path to deliver images; returning an image content array does not deliver native images.
 
@@ -24,6 +25,16 @@ await paper.write_html({
 	mode: "insert-children",
 });
 await paper.finish_working_on_nodes({ nodeIds: [targetNodeId] });
+```
+
+```ts
+// place a local image; always set an explicit width on the <img>
+const src = await plugins.image.get("~/Desktop/screenshot.png");
+await paper.write_html({
+	html: `<img src="${src}" style="width:600px" />`,
+	targetNodeId,
+	mode: "insert-children",
+});
 ```
 
 ### Read results and screenshots
@@ -52,7 +63,7 @@ Discovery order:
 
 1. `./paper-execute.config.json`
 2. `~/.config/paper-execute/config.json`
-3. Built-in default `{ "plugins": ["icon"] }`
+3. Built-in default `{ "plugins": ["icon", "image"] }`
 
 Config shape:
 
@@ -61,6 +72,7 @@ Config shape:
   "paperMcpUrl": "http://127.0.0.1:29979/mcp",
   "plugins": [
     "icon",
+    "image",
     ["@paper-execute/faker", { "locale": "en" }],
     "./plugins/brand-kit.ts",
     "/absolute/path/to/plugin.ts"

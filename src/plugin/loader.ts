@@ -4,12 +4,16 @@ import { Effect } from "effect";
 
 import { PaperPluginLoadError } from "#/errors";
 import { iconPlugin } from "#/icons/plugin";
+import { imagePlugin } from "#/image/plugin";
 import type { PaperPluginEntry } from "#/plugin/config";
 import type { PaperPlugin } from "#/plugin/define";
 
 type PaperPluginFactory = (options: unknown) => PaperPlugin;
 
-const builtInPlugins = new Map<string, PaperPlugin | PaperPluginFactory>([["icon", iconPlugin]]);
+const builtInPlugins = new Map<string, PaperPlugin | PaperPluginFactory>([
+	["icon", iconPlugin],
+	["image", imagePlugin],
+]);
 
 export function loadPlugins(
 	entries: readonly PaperPluginEntry[],

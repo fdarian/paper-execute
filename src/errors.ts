@@ -36,6 +36,21 @@ export class IconSvgError extends Schema.TaggedError<IconSvgError>()("IconSvgErr
 	cause: Schema.Defect(),
 }) {}
 
+export class ImageReadError extends Schema.TaggedError<ImageReadError>()("ImageReadError", {
+	path: Schema.String,
+	reason: Schema.String,
+	cause: Schema.optional(Schema.Defect()),
+}) {}
+
+export class ImageUnsupportedTypeError extends Schema.TaggedError<ImageUnsupportedTypeError>()(
+	"ImageUnsupportedTypeError",
+	{
+		path: Schema.String,
+		extension: Schema.String,
+		supported: Schema.Array(Schema.String),
+	},
+) {}
+
 export class PaperExecutorError extends Schema.TaggedError<PaperExecutorError>()(
 	"PaperExecutorError",
 	{
