@@ -28,10 +28,10 @@ await paper.finish_working_on_nodes({ nodeIds: [targetNodeId] });
 ```
 
 ```ts
-// place a local image; always set an explicit width on the <img>
+// place a local image; set width plus aspect-ratio (or height), otherwise Paper collapses the height to 0
 const src = await plugins.image.get("~/Desktop/screenshot.png");
 await paper.write_html({
-	html: `<img src="${src}" style="width:600px" />`,
+	html: `<img src="${src}" style="width:600px;aspect-ratio:1624/1061" />`,
 	targetNodeId,
 	mode: "insert-children",
 });
