@@ -92,6 +92,7 @@ Plugin load failures are warned to stderr and skipped one entry at a time.
 
 - Export `default` as either a `PaperPlugin` object or a factory `(options) => PaperPlugin`.
 - Define plugins with `definePaperPlugin` from `paper-execute/plugin`.
+- `instructions` is shown to the model under "Plugins", ahead of everything else in the server instructions (clients truncate them). Open with when to use the plugin, then how. `plugins.<name>.*` calls are also listed in the `execute` tool description.
 - Each leaf call takes zero or one argument. No `input` means no arg. Scalar, object, and array schemas are each passed as one arg.
 - `execute` may return an Effect, a Promise, or a plain value. paper-execute normalizes all three.
 - `output` is the return value schema directly.

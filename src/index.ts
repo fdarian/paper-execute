@@ -13,7 +13,8 @@ const program = buildExecutionEngine().pipe(
 			try: async () => {
 				const server = createPaperExecuteServer(
 					runtime.engine,
-					runtime.pluginRegistry.docsText,
+					runtime.pluginRegistry.instructionsText,
+					runtime.pluginRegistry.callsSummary,
 					runtime.pluginRegistry.preambleSource,
 				);
 				const transport = new StdioServerTransport();

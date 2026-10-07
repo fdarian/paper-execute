@@ -18,7 +18,7 @@ export type PaperPluginToolNode =
 
 export type PaperPlugin = {
 	readonly name: string;
-	readonly docs: string;
+	readonly instructions: string;
 	readonly tools: Record<string, PaperPluginToolNode>;
 };
 

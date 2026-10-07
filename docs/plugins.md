@@ -110,7 +110,7 @@ import QRCode from "qrcode";
 
 export default definePaperPlugin({
   name: "qr",
-  docs: "`plugins.qr.render(text)` → SVG string of a QR code.",
+  instructions: "When the user wants a QR code, use `plugins.qr.render(text)` → SVG string of a QR code.",
 
   // this tree IS plugins.qr.* — a node is a leaf (has execute) or a branch (nested).
   // execute may return an Effect, a Promise, or a plain value — all normalized.
@@ -152,7 +152,7 @@ const gen = (fn: () => string) => ({ output: z.string(), execute: () => fn() });
 
 export default definePaperPlugin({
   name: "faker",
-  docs: "Curated faker generators, e.g. `plugins.faker.internet.username()`.",
+  instructions: "Curated faker generators, e.g. `plugins.faker.internet.username()`.",
   tools: {
     internet: { username: gen(() => faker.internet.username()), email: gen(() => faker.internet.email()) },
     company:  { name: gen(() => faker.company.name()), catchPhrase: gen(() => faker.company.catchPhrase()) },

@@ -15,7 +15,8 @@ type PaperPluginLeafRegistration = {
 };
 
 export type PaperPluginRegistry = {
-	readonly docsText: string;
+	readonly instructionsText: string;
+	readonly callsSummary: string;
 	readonly preambleSource: string;
 	readonly executorPlugin: ReturnType<typeof buildRegistryExecutorPlugin>;
 };
@@ -26,7 +27,8 @@ export function createPluginRegistry(
 	return Effect.gen(function* () {
 		const leaves = yield* collectLeaves(plugins);
 		return {
-			docsText: buildDocsText(plugins, leaves),
+			instructionsText: buildInstructionsText(plugins, leaves),
+			callsSummary: buildCallsSummary(leaves),
 			preambleSource: buildPreambleSource(leaves),
 			executorPlugin: buildRegistryExecutorPlugin(leaves),
 		};
@@ -127,18 +129,40 @@ function buildLeafPreambleLines(leaf: PaperPluginLeafRegistration): readonly str
 	return lines;
 }
 
-function buildDocsText(
+const maxFullyListedCalls = 4;
+
+function buildCallsSummary(leaves: readonly PaperPluginLeafRegistration[]): string {
+	return uniquePluginNames(leaves)
+		.map((name) => summarizePluginCalls(name, leaves))
+		.join(", ");
+}
+
+function uniquePluginNames(leaves: readonly PaperPluginLeafRegistration[]): readonly string[] {
+	return [...new Set(leaves.map((leaf) => leaf.pluginName))];
+}
+
+// Large plugins collapse to their top-level groups so the summary fits client truncation limits.
+function summarizePluginCalls(
+	pluginName: string,
+	leaves: readonly PaperPluginLeafRegistration[],
+): string {
+	const own = leaves.filter((leaf) => leaf.pluginName === pluginName);
+	if (own.length <= maxFullyListedCalls) {
+		return own.map((leaf) => `plugins.${pluginName}.${leaf.path.join(".")}(...)`).join(", ");
+	}
+	const groups = [...new Set(own.map((leaf) => leaf.path[0]))];
+	return `plugins.${pluginName}.{${groups.join(",")}}`;
+}
+
+function buildInstructionsText(
 	plugins: readonly PaperPlugin[],
 	leaves: readonly PaperPluginLeafRegistration[],
 ): string {
 	return plugins
-		.map((plugin) => {
-			const signatures = leaves
-				.filter((leaf) => leaf.pluginName === plugin.name)
-				.map((leaf) => `plugins.${plugin.name}.${leaf.path.join(".")}(...)`)
-				.join(", ");
-			return `${plugin.docs}\nAvailable calls: ${signatures}`;
-		})
+		.map(
+			(plugin) =>
+				`${plugin.instructions}\nAvailable calls: ${summarizePluginCalls(plugin.name, leaves)}`,
+		)
 		.join("\n");
 }
 

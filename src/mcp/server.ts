@@ -79,12 +79,27 @@ const executeInstructions = [
 	"- TypeScript type syntax (`: T`, `as T`, generics, interfaces, type aliases) is stripped before execution — feel free to write idiomatic TypeScript using the shapes from `tools.describe.tool()`. Decorators and `enum` are not supported.",
 ].join("\n");
 
-function buildServerInstructions(pluginDocsText: string): string {
-	const baseInstructions = `${paperInstructions}\n\n${executeInstructions}`;
-	if (pluginDocsText.length === 0) {
-		return baseInstructions;
+// Clients truncate server instructions, so plugin instructions come first and the generic executor workflow last.
+function buildServerInstructions(pluginInstructionsText: string): string {
+	const sections =
+		pluginInstructionsText.length === 0 ? [] : [`## Plugins\n\n${pluginInstructionsText}`];
+	return [...sections, paperInstructions, executeInstructions].join("\n\n");
+}
+
+function buildExecuteDescription(pluginCallsSummary: string): string {
+	const lines = [
+		"Execute TypeScript in a sandbox with Paper APIs and configured plugins. Await tool calls. `return` serializes values as text; `emit(value)` sends native MCP content or files. See server instructions for the workflow.",
+		"`paper.<tool>(args)` throws on failure and returns structuredContent when present; otherwise, nonempty all-text content whose blocks each parse as JSON objects with no shared keys returns their shallow merge (including a single JSON-object block). Invalid JSON, arrays/null/primitives, key collisions, or non-text blocks fall back to a string for exactly one text item, otherwise the unchanged content array. There is no `.content` wrapper. Plugins return their bare data.",
+		"Screenshots: `const s = await paper.get_screenshot({ fileId, nodeId }); for (const c of s) if (c.type === 'image') emit(c);`. Tree summaries: `const t = await paper.get_tree_summary({ fileId, nodeId, depth: 2 }); return t.summary;`. Find nodes: `const f = await paper.find_nodes({ fileId, textValue: 'Submit' }); return f.nodes;`.",
+	];
+	if (pluginCallsSummary.length > 0) {
+		lines.splice(
+			1,
+			0,
+			`Plugins: ${pluginCallsSummary} — see server instructions "Plugins" for when and how to use each.`,
+		);
 	}
-	return `${baseInstructions}\n\n${pluginDocsText}`;
+	return lines.join("\n");
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -234,24 +249,21 @@ function executionContent(result: ExecuteResult): ContentBlock[] {
 
 export function createPaperExecuteServer<E extends Cause.YieldableError>(
 	engine: ExecutionEngine<E>,
-	pluginDocsText: string,
+	pluginInstructionsText: string,
+	pluginCallsSummary: string,
 	pluginPreambleSource: string,
 ): McpServer {
 	const server = new McpServer(
 		{ name: "paper-execute", version: "1.0.0" },
 		{
-			instructions: buildServerInstructions(pluginDocsText),
+			instructions: buildServerInstructions(pluginInstructionsText),
 		},
 	);
 
 	server.registerTool(
 		"execute",
 		{
-			description: [
-				"Execute TypeScript in a sandbox with Paper APIs and configured plugins. Await tool calls. `return` serializes values as text; `emit(value)` sends native MCP content or files. See server instructions for the workflow.",
-				"`paper.<tool>(args)` throws on failure and returns structuredContent when present; otherwise, nonempty all-text content whose blocks each parse as JSON objects with no shared keys returns their shallow merge (including a single JSON-object block). Invalid JSON, arrays/null/primitives, key collisions, or non-text blocks fall back to a string for exactly one text item, otherwise the unchanged content array. There is no `.content` wrapper. Plugins return their bare data.",
-				"Screenshots: `const s = await paper.get_screenshot({ fileId, nodeId }); for (const c of s) if (c.type === 'image') emit(c);`. Tree summaries: `const t = await paper.get_tree_summary({ fileId, nodeId, depth: 2 }); return t.summary;`. Find nodes: `const f = await paper.find_nodes({ fileId, textValue: 'Submit' }); return f.nodes;`.",
-			].join("\n"),
+			description: buildExecuteDescription(pluginCallsSummary),
 			inputSchema: { code: z.string().min(1) },
 		},
 		async (input) => {

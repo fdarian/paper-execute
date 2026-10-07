@@ -22,7 +22,8 @@ const ImageGetOutput = Schema.toStandardSchemaV1(Schema.String);
 
 export const imagePlugin = definePaperPlugin({
 	name: "image",
-	docs: 'Local image helper. `plugins.image.get(path)` reads an image file (png, jpg, jpeg, gif, webp, svg, avif; a leading `~` is expanded) and returns a `data:<mime>;base64,...` URI string. Embed it by putting the returned string in an `<img src>` inside `paper.write_html`, and always set an explicit width plus an `aspect-ratio` (or height) on the `<img>`, e.g. `style="width:600px;aspect-ratio:1624/1061"`; Paper collapses an image with no height to 0.',
+	instructions:
+		'When the user gives a local image file path (screenshot, photo, etc.) to put into Paper, use `plugins.image.get(path)`; never read the file yourself. It reads an image file (png, jpg, jpeg, gif, webp, svg, avif; a leading `~` is expanded) and returns a `data:<mime>;base64,...` URI string. Embed it by putting the returned string in an `<img src>` inside `paper.write_html`, and always set an explicit width plus an `aspect-ratio` (or height) on the `<img>`, e.g. `style="width:600px;aspect-ratio:1624/1061"`; Paper collapses an image with no height to 0.',
 	tools: {
 		get: {
 			input: ImageGetInput,

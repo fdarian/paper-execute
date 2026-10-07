@@ -7,6 +7,7 @@ import { InMemoryTransport } from "@modelcontextprotocol/sdk/inMemory.js";
 import { Effect } from "effect";
 
 import { iconPlugin } from "#/icons/plugin";
+import { imagePlugin } from "#/image/plugin";
 import { createPaperExecuteServer } from "#/mcp/server";
 import { createPluginRegistry } from "#/plugin/registry";
 
@@ -21,7 +22,8 @@ test("MCP client receives emitted content before returned text through QuickJS",
 	);
 	const server = createPaperExecuteServer(
 		createExecutionEngine({ executor, codeExecutor: makeQuickJsExecutor() }),
-		registry.docsText,
+		registry.instructionsText,
+		registry.callsSummary,
 		registry.preambleSource,
 	);
 	const client = new Client({ name: "test", version: "1.0.0" });
@@ -119,6 +121,47 @@ test("MCP client receives emitted content before returned text through QuickJS",
 			arguments: { code: 'return (await plugins.icon.get("acorn")).includes("<svg");' },
 		});
 		expect(plugin.content).toEqual([{ type: "text", text: "true" }]);
+	} finally {
+		await client.close();
+		await server.close();
+	}
+});
+
+test("plugin instructions lead the server instructions and calls are listed in the execute description", async () => {
+	const registry = await Effect.runPromise(createPluginRegistry([iconPlugin, imagePlugin]));
+	const executor = await Effect.runPromise(
+		createExecutor({
+			tenant: Tenant.make("test"),
+			plugins: [registry.executorPlugin()],
+			onElicitation: "accept-all",
+		}),
+	);
+	const server = createPaperExecuteServer(
+		createExecutionEngine({ executor, codeExecutor: makeQuickJsExecutor() }),
+		registry.instructionsText,
+		registry.callsSummary,
+		registry.preambleSource,
+	);
+	const client = new Client({ name: "test", version: "1.0.0" });
+	const transports = InMemoryTransport.createLinkedPair();
+	await server.connect(transports[0]);
+	await client.connect(transports[1]);
+	try {
+		const instructions = client.getInstructions();
+		if (instructions === undefined) {
+			throw new Error("Server sent no instructions");
+		}
+		expect(instructions.startsWith("## Plugins\n\n")).toBe(true);
+		const imageAt = instructions.indexOf("plugins.image.get(path)");
+		expect(imageAt).toBeGreaterThan(-1);
+		expect(imageAt).toBeLessThan(instructions.indexOf("Paper is a professional design tool"));
+		expect(instructions.indexOf("Paper is a professional design tool")).toBeLessThan(
+			instructions.indexOf("# execute"),
+		);
+		const description = (await client.listTools()).tools[0]?.description;
+		expect(description).toContain(
+			"Plugins: plugins.icon.search(...), plugins.icon.get(...), plugins.image.get(...)",
+		);
 	} finally {
 		await client.close();
 		await server.close();
