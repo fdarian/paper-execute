@@ -1,7 +1,7 @@
 Purpose: MCP server exposing one `execute` codemode tool for Paper via executor QuickJS.
 Stack: Bun, TypeScript, Effect v4 RC, executor core APIs, MCP SDK, Biome.
 Commands: `pnpm install`, `bun run check:type`, `bun run check:lint`, `bun run src/index.ts`.
-Architecture: `src/index.ts` boots stdio MCP, `src/mcp/server.ts` wraps the single tool, `src/executor/engine.ts` wires executor + Paper MCP + loaded plugins, `src/plugin/*` defines plugin/config/loader/registry flow, `src/icons/*` handles the built-in Phosphor icon plugin, `src/image/*` the built-in local-image plugin (`plugins.image.get(path)` → `data:` URI).
+Architecture: `src/index.ts` boots stdio MCP, `src/mcp/server.ts` wraps the single tool, `src/executor/engine.ts` wires executor + Paper MCP + loaded plugins, `src/plugin/*` defines plugin/config/loader/registry flow, `src/icons/*` handles the built-in Phosphor icon plugin, `src/image/*` the built-in local-image plugin (`plugins.image.get(path)` → `{ src (data: URI), width, height, mimeType }`; dimensions via `image-size`).
 Notes: Use `@executor-js/*/core` imports (the bare `.` export is the promise façade), keep Effect at `4.0.0-rc.115`, and treat all sandbox tool calls as async.
 Gotchas (non-obvious):
 - `patches/@executor-js%2Fplugin-mcp@1.5.28.patch` fixes an upstream bug: plugin-mcp's `/core` build imports `tool`/elicitation types from the SDK root (promise façade, which lacks them) instead of `@executor-js/sdk/core`. Without the patch, importing `@executor-js/plugin-mcp/core` throws at load. Present in 1.5.28 and 2.0.0.

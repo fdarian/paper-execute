@@ -26,7 +26,7 @@ const paperInstructions = [
 	"",
 	'You MUST load the full guide before other Paper tools: `await paper.get_guide({ topic: "paper-mcp-instructions" })`. Do this once per session; call again if a long thread may have dropped guide text.',
 	"",
-	"- Call `paper.get_basic_info` when starting on a file to learn artboards and dimensions; use `paper.get_selection` to see user focus. Omit fileId to use the file the user is looking at, or call `paper.list_files` to find another.",
+	"- Call `paper.get_basic_info` when starting on a file to learn artboards and dimensions; use `paper.get_selection` to see user focus. Only `get_basic_info` and `get_selection` may omit fileId (they use the file the user is looking at); every other Paper tool requires `fileId`, so pass `file.id` from `paper.get_basic_info`.",
 	"- pageId defaults to the page the user is viewing; pass it to work on another page without disrupting them. You can't switch their page.",
 	'- `paper.find_nodes` is a filtered search, not page enumeration: it requires textValue or a non-empty filters array. For example, use `{ fileId, pageId, textValue: "Submit" }` or `{ fileId, pageId, filters: [{ styleName: "background-color", styleValue: "#ff0000" }] }`; never call it with only fileId and pageId.',
 	"- Typography: you MUST call `paper.get_font_family_info` before your first typographic styling in a session. Prefer font families listed in `paper.get_basic_info` unless the user specifies otherwise. Use px for font sizes, em for letter-spacing, px for line-height.",

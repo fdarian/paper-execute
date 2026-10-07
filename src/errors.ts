@@ -50,6 +50,20 @@ export class ImageReadError extends Schema.TaggedError<ImageReadError>()("ImageR
 	}
 }
 
+export class ImageDimensionsError extends Schema.TaggedError<ImageDimensionsError>()(
+	"ImageDimensionsError",
+	{
+		path: Schema.String,
+		cause: Schema.Defect(),
+	},
+) {
+	readonly __executorUserActionable = true;
+	readonly code = "image_dimensions_unknown";
+	get userMessage() {
+		return `Could not determine the pixel dimensions of ${this.path} (an SVG needs width/height or a viewBox)`;
+	}
+}
+
 export class ImageUnsupportedTypeError extends Schema.TaggedError<ImageUnsupportedTypeError>()(
 	"ImageUnsupportedTypeError",
 	{

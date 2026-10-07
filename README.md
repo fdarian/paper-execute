@@ -11,7 +11,7 @@ The `code` you pass runs in the sandbox with these globals (all async):
 - `plugins.<name>.*` — plugin namespaces generated from the configured plugin tool trees.
 - `plugins.icon.get(name)` — returns embeddable Phosphor SVG markup as a string.
 - `plugins.icon.search(query)` — returns candidate icon matches.
-- `plugins.image.get(path)` — reads a local image (png, jpg, jpeg, gif, webp, svg, avif; leading `~` expands to the home directory) and returns a `data:<mime>;base64,...` URI. Throws for unknown extensions or unreadable files.
+- `plugins.image.get(path)` — reads a local image (png, jpg, jpeg, gif, webp, svg, avif; leading `~` expands to the home directory) and returns `{ src, width, height, mimeType }`: `src` is a `data:<mime>;base64,...` URI and `width`/`height` are the intrinsic pixel size. Throws for unknown extensions, unreadable files, or an SVG with neither width/height nor a viewBox.
 - Returned strings are sent as text; other returned values, including content arrays, are JSON-stringified.
 - `emit(item)` sends an individual MCP content block, a plain value rendered as text, or a `ToolFile` rendered by MIME. Emitted items come first, followed by returned text. Use this path to deliver images; returning an image content array does not deliver native images.
 
@@ -28,10 +28,10 @@ await paper.finish_working_on_nodes({ nodeIds: [targetNodeId] });
 ```
 
 ```ts
-// place a local image; set width plus aspect-ratio (or height), otherwise Paper collapses the height to 0
-const src = await plugins.image.get("~/Desktop/screenshot.png");
+// place a local image; width plus aspect-ratio are required, otherwise Paper collapses the height to 0
+const img = await plugins.image.get("~/Desktop/screenshot.png");
 await paper.write_html({
-	html: `<img src="${src}" style="width:600px;aspect-ratio:1624/1061" />`,
+	html: `<img src="${img.src}" style="width:600px;aspect-ratio:${img.width}/${img.height}" />`,
 	targetNodeId,
 	mode: "insert-children",
 });
