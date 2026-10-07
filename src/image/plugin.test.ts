@@ -42,3 +42,13 @@ test("get fails on a missing file", async () => {
 	const error = await Effect.runPromise(Effect.flip(readImageDataUri(join(dir, "missing.png"))));
 	expect(error._tag).toBe("ImageReadError");
 });
+
+test("failures carry a user-actionable message for the sandbox", async () => {
+	const unsupported = await Effect.runPromise(
+		Effect.flip(readImageDataUri(join(dir, "notes.txt"))),
+	);
+	expect(unsupported).toMatchObject({ __executorUserActionable: true });
+	expect(unsupported).toHaveProperty("userMessage", expect.stringContaining(".txt"));
+	const missing = await Effect.runPromise(Effect.flip(readImageDataUri(join(dir, "missing.png"))));
+	expect(missing).toHaveProperty("userMessage", expect.stringContaining("missing.png"));
+});

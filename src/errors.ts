@@ -36,11 +36,19 @@ export class IconSvgError extends Schema.TaggedError<IconSvgError>()("IconSvgErr
 	cause: Schema.Defect(),
 }) {}
 
+// `__executorUserActionable`, `code` and `userMessage` make executor pass the message to sandbox code
+// instead of replacing it with an opaque "Internal tool error".
 export class ImageReadError extends Schema.TaggedError<ImageReadError>()("ImageReadError", {
 	path: Schema.String,
 	reason: Schema.String,
 	cause: Schema.optional(Schema.Defect()),
-}) {}
+}) {
+	readonly __executorUserActionable = true;
+	readonly code = "image_read_failed";
+	get userMessage() {
+		return `${this.reason}: ${this.path}`;
+	}
+}
 
 export class ImageUnsupportedTypeError extends Schema.TaggedError<ImageUnsupportedTypeError>()(
 	"ImageUnsupportedTypeError",
@@ -49,7 +57,13 @@ export class ImageUnsupportedTypeError extends Schema.TaggedError<ImageUnsupport
 		extension: Schema.String,
 		supported: Schema.Array(Schema.String),
 	},
-) {}
+) {
+	readonly __executorUserActionable = true;
+	readonly code = "image_unsupported_type";
+	get userMessage() {
+		return `Unsupported image extension "${this.extension}" for ${this.path}; supported: ${this.supported.join(", ")}`;
+	}
+}
 
 export class PaperExecutorError extends Schema.TaggedError<PaperExecutorError>()(
 	"PaperExecutorError",
