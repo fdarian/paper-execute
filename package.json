@@ -6,7 +6,7 @@
 		".": "./src/index.ts",
 		"./plugin": "./src/plugin/index.ts"
 	},
-	"packageManager": "pnpm@12.6.0",
+	"packageManager": "pnpm@12.9.0",
 	"scripts": {
 		"check:type": "tsc --noEmit",
 		"check:lint": "biome check .",
