@@ -69,13 +69,19 @@ function agentsConfig(serverInstructions: string): string {
 	});
 }
 
-function settingsArgs(inheritSettings: InheritSettings): string[] {
+function settingsArgs(
+	inheritSettings: InheritSettings,
+	literalSettings: Record<string, unknown>,
+): string[] {
 	const configDir = process.env.CLAUDE_CONFIG_DIR ?? join(homedir(), ".claude");
 	const path = join(configDir, "settings.json");
 	const userSettings: Record<string, unknown> = existsSync(path)
 		? JSON.parse(readFileSync(path, "utf8"))
 		: {};
-	return ["--settings", JSON.stringify(buildSettings(userSettings, inheritSettings))];
+	return [
+		"--settings",
+		JSON.stringify(buildSettings(userSettings, inheritSettings, literalSettings)),
+	];
 }
 
 export interface DesignerClaudeOptions {
@@ -102,10 +108,10 @@ export function runDesignerClaude(options: DesignerClaudeOptions) {
 				mcpConfig(),
 				"--plugin-dir",
 				materializePluginDir(),
-				// Skips the user's global CLAUDE.md, hooks, and settings so their orchestration rules don't leak in.
+				// Scopes settings files only: ancestor-directory CLAUDE.md/rules (e.g. ~/.claude/CLAUDE.md) still load, so config `cc.settings.claudeMdExcludes` has to cover them.
 				"--setting-sources",
 				"project,local",
-				...settingsArgs(booted.config.cc?.inheritSettings ?? {}),
+				...settingsArgs(booted.config.cc?.inheritSettings ?? {}, booted.config.cc?.settings ?? {}),
 				"--agents",
 				agents,
 				"--agent",

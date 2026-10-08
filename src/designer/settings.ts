@@ -17,6 +17,7 @@ function isObject(value: unknown): value is Record<string, unknown> {
 export function buildSettings(
 	userSettings: Record<string, unknown>,
 	inheritSettings: InheritSettings,
+	literalSettings: Record<string, unknown>,
 ): Record<string, unknown> {
 	const inherited: Record<string, unknown> = {};
 	for (const [key, spec] of Object.entries({ ...alwaysInherited, ...inheritSettings })) {
@@ -36,9 +37,10 @@ export function buildSettings(
 		);
 		if (Object.keys(picked).length > 0) inherited[key] = picked;
 	}
-	const inheritedPlugins = inherited.enabledPlugins;
+	const pluginsSources = [inherited.enabledPlugins, literalSettings.enabledPlugins];
 	return {
 		...inherited,
-		enabledPlugins: { ...(isObject(inheritedPlugins) ? inheritedPlugins : {}), ...designerPlugins },
+		...literalSettings,
+		enabledPlugins: Object.assign({}, ...pluginsSources.filter(isObject), designerPlugins),
 	};
 }
