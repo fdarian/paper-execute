@@ -10,13 +10,26 @@ const PluginEntrySchema = Schema.Union([
 	Schema.Tuple([Schema.String, Schema.Unknown]),
 ]);
 
+// `true` inherits the whole value; a string array inherits only those sub-keys of an object value.
+const InheritSettingSchema = Schema.Union([Schema.Literal(true), Schema.Array(Schema.String)]);
+
 const PaperPluginConfigSchema = Schema.Struct({
 	paperMcpUrl: Schema.optional(Schema.String),
 	plugins: Schema.Array(PluginEntrySchema),
+	cc: Schema.optional(
+		Schema.Struct({
+			inheritSettings: Schema.optional(Schema.Record(Schema.String, InheritSettingSchema)),
+		}),
+	),
 });
 
 export type PaperPluginEntry = typeof PluginEntrySchema.Type;
 export type PaperPluginConfig = typeof PaperPluginConfigSchema.Type;
+export type InheritSettings = Readonly<Record<string, typeof InheritSettingSchema.Type>>;
+
+export function decodePluginConfig(input: unknown): PaperPluginConfig {
+	return Schema.decodeUnknownSync(PaperPluginConfigSchema)(input);
+}
 
 export const defaultPluginConfig: PaperPluginConfig = {
 	plugins: ["icon", "image"],
@@ -55,7 +68,7 @@ function readConfigAtPath(
 				return null;
 			}
 			const parsed = JSON.parse(await file.text());
-			return Schema.decodeUnknownSync(PaperPluginConfigSchema)(parsed);
+			return decodePluginConfig(parsed);
 		},
 		catch: (cause) =>
 			new PaperPluginConfigError({

@@ -6,7 +6,9 @@ import { Effect } from "effect";
 
 import { buildServerInstructions } from "#/mcp/instructions";
 import { bootPluginRegistry } from "#/plugin/boot";
+import type { InheritSettings } from "#/plugin/config";
 import { readDesignerAssets } from "./assets.ts" with { type: "macro" };
+import { buildSettings } from "./settings.ts";
 
 const assets = readDesignerAssets();
 
@@ -67,21 +69,13 @@ function agentsConfig(serverInstructions: string): string {
 	});
 }
 
-// `--setting-sources` below drops the user's settings.json wholesale; these UI preferences are carried back via `--settings`.
-const carriedUserSettings = ["statusLine", "theme", "editorMode", "outputStyle"];
-
-const designerPlugins = { "frontend-design@claude-plugins-official": true };
-
-function settingsArgs(): string[] {
+function settingsArgs(inheritSettings: InheritSettings): string[] {
 	const configDir = process.env.CLAUDE_CONFIG_DIR ?? join(homedir(), ".claude");
 	const path = join(configDir, "settings.json");
 	const userSettings: Record<string, unknown> = existsSync(path)
 		? JSON.parse(readFileSync(path, "utf8"))
 		: {};
-	const carried = Object.fromEntries(
-		carriedUserSettings.filter((key) => key in userSettings).map((key) => [key, userSettings[key]]),
-	);
-	return ["--settings", JSON.stringify({ ...carried, enabledPlugins: designerPlugins })];
+	return ["--settings", JSON.stringify(buildSettings(userSettings, inheritSettings))];
 }
 
 export interface DesignerClaudeOptions {
@@ -111,7 +105,7 @@ export function runDesignerClaude(options: DesignerClaudeOptions) {
 				// Skips the user's global CLAUDE.md, hooks, and settings so their orchestration rules don't leak in.
 				"--setting-sources",
 				"project,local",
-				...settingsArgs(),
+				...settingsArgs(booted.config.cc?.inheritSettings ?? {}),
 				"--agents",
 				agents,
 				"--agent",
