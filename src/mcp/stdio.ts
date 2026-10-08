@@ -1,13 +1,10 @@
-#!/usr/bin/env bun
-
-import { BunRuntime } from "@effect/platform-bun";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { Effect } from "effect";
 
 import { buildExecutionEngine } from "#/executor/engine";
 import { createPaperExecuteServer } from "#/mcp/server";
 
-const program = buildExecutionEngine().pipe(
+export const serveStdio = buildExecutionEngine().pipe(
 	Effect.flatMap((runtime) =>
 		Effect.tryPromise({
 			try: async () => {
@@ -25,5 +22,3 @@ const program = buildExecutionEngine().pipe(
 		}),
 	),
 );
-
-BunRuntime.runMain(program);

@@ -117,7 +117,7 @@ pnpm install
 pnpm run check:type
 pnpm run check:lint
 bun test
-bun run src/index.ts
+bun run src/cli.ts mcp
 ```
 
 ## MCP Client Config
@@ -125,10 +125,13 @@ bun run src/index.ts
 ```json
 {
   "command": "bun",
-  "args": ["run", <path-to-repo>/src/index.ts"]
+  "args": ["run", "<path-to-repo>/src/cli.ts", "mcp"]
 }
 ```
 
 ## Bin
 
-`src/index.ts` has a Bun shebang, so it can also be used as an executable entrypoint.
+`bun run build` compiles `dist/cli/designer` (`bin: designer`):
+
+- `designer mcp` runs the stdio MCP server.
+- `designer cc [-- ...args]` launches Claude Code with the designer agent, the Paper MCP server, and the `paper-refs` plugin; args after `--` pass through to `claude` (e.g. `designer cc -- --resume`).

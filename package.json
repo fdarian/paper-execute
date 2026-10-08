@@ -1,9 +1,12 @@
 {
 	"name": "paper-execute",
+	"version": "0.1.0",
 	"private": true,
 	"type": "module",
+	"bin": {
+		"designer": "./dist/cli/designer"
+	},
 	"exports": {
-		".": "./src/index.ts",
 		"./plugin": "./src/plugin/index.ts"
 	},
 	"packageManager": "pnpm@12.9.0",
@@ -11,7 +14,8 @@
 		"check:type": "tsc --noEmit",
 		"check:lint": "biome check .",
 		"format": "biome format --write .",
-		"start": "bun run src/index.ts"
+		"build": "bun build --compile --bytecode --compile-autoload-package-json --compile-autoload-tsconfig src/cli.ts --outfile dist/cli/designer",
+		"start": "bun run src/cli.ts mcp"
 	},
 	"dependencies": {
 		"@effect/platform-bun": "4.0.0-rc.115",

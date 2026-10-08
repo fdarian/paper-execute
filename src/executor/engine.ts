@@ -14,9 +14,8 @@ import {
 import { Effect } from "effect";
 
 import { PaperExecutorError } from "#/errors";
-import { discoverPluginConfig } from "#/plugin/config";
-import { loadPlugins } from "#/plugin/loader";
-import { createPluginRegistry, type PaperPluginRegistry } from "#/plugin/registry";
+import { bootPluginRegistry } from "#/plugin/boot";
+import type { PaperPluginRegistry } from "#/plugin/registry";
 
 const defaultPaperMcpUrl = "http://127.0.0.1:29979/mcp";
 
@@ -46,10 +45,9 @@ export type PaperExecutionRuntime = {
 
 export function buildExecutionEngine() {
 	return Effect.gen(function* () {
-		const pluginConfigResult = yield* discoverPluginConfig();
-		const pluginConfig = pluginConfigResult.config;
-		const plugins = yield* loadPlugins(pluginConfig.plugins);
-		const pluginRegistry = yield* createPluginRegistry(plugins);
+		const booted = yield* bootPluginRegistry();
+		const pluginConfig = booted.config;
+		const pluginRegistry = booted.registry;
 		const paperMcpUrl = pluginConfig.paperMcpUrl ?? process.env.PAPER_MCP_URL ?? defaultPaperMcpUrl;
 		const executor = yield* createExecutor({
 			tenant: Tenant.make("paper-execute"),

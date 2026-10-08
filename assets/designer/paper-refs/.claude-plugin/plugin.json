@@ -1,0 +1,8 @@
+{
+	"name": "paper-refs",
+	"version": "0.1.0",
+	"description": "Rewrite Paper URLs into short references with grouped API IDs.",
+	"author": {
+		"name": "Farrel Darian"
+	}
+}
