@@ -1,5 +1,5 @@
-import { existsSync, mkdirSync, renameSync, rmSync, writeFileSync } from "node:fs";
-import { tmpdir } from "node:os";
+import { existsSync, mkdirSync, readFileSync, renameSync, rmSync, writeFileSync } from "node:fs";
+import { homedir, tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 
 import { Effect } from "effect";
@@ -67,7 +67,27 @@ function agentsConfig(serverInstructions: string): string {
 	});
 }
 
-export function runDesignerClaude(passthrough: readonly string[]) {
+// `--setting-sources` below drops the user's settings.json wholesale; these UI preferences are carried back via `--settings`.
+const carriedUserSettings = ["statusLine", "theme", "editorMode", "outputStyle"];
+
+function userSettingsArgs(): string[] {
+	const configDir = process.env.CLAUDE_CONFIG_DIR ?? join(homedir(), ".claude");
+	const path = join(configDir, "settings.json");
+	if (!existsSync(path)) return [];
+	const settings: Record<string, unknown> = JSON.parse(readFileSync(path, "utf8"));
+	const carried = Object.fromEntries(
+		carriedUserSettings.filter((key) => key in settings).map((key) => [key, settings[key]]),
+	);
+	return ["--settings", JSON.stringify(carried)];
+}
+
+export interface DesignerClaudeOptions {
+	readonly continue: boolean;
+	readonly resume: boolean;
+	readonly passthrough: readonly string[];
+}
+
+export function runDesignerClaude(options: DesignerClaudeOptions) {
 	return Effect.gen(function* () {
 		const claude = Bun.which("claude");
 		if (claude === null) {
@@ -88,11 +108,15 @@ export function runDesignerClaude(passthrough: readonly string[]) {
 				// Skips the user's global CLAUDE.md, hooks, and settings so their orchestration rules don't leak in.
 				"--setting-sources",
 				"project,local",
+				...userSettingsArgs(),
 				"--agents",
 				agents,
 				"--agent",
 				"director",
-				...passthrough,
+				...(options.continue ? ["--continue"] : []),
+				// Placed right before the passthrough so a leading positional (`designer cc -r <id>`) becomes the session id.
+				...(options.resume ? ["--resume"] : []),
+				...options.passthrough,
 			],
 			{ stdin: "inherit", stdout: "inherit", stderr: "inherit" },
 		);
