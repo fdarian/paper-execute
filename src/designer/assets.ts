@@ -6,6 +6,8 @@ const assetsDir = join(import.meta.dir, "../../assets/designer");
 
 export function readDesignerAssets(): {
 	agentPrompt: string;
+	designerPrompt: string;
+	directorPrompt: string;
 	pluginFiles: Record<string, string>;
 } {
 	const pluginDir = join(assetsDir, "paper-refs");
@@ -17,6 +19,8 @@ export function readDesignerAssets(): {
 	}
 	return {
 		agentPrompt: readFileSync(join(assetsDir, "agent.md"), "utf8"),
+		designerPrompt: readFileSync(join(assetsDir, "designer.md"), "utf8"),
+		directorPrompt: readFileSync(join(assetsDir, "director.md"), "utf8"),
 		pluginFiles,
 	};
 }

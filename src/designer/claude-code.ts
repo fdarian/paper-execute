@@ -50,10 +50,20 @@ function mcpConfig(): string {
 	});
 }
 
-// Claude Code subagents don't receive MCP server instructions, so they are appended to the prompt.
+// Agent prompts replace the system prompt and subagents don't receive MCP server instructions,
+// so both agents carry the server instructions themselves.
 function agentsConfig(serverInstructions: string): string {
 	return JSON.stringify({
-		designer: { description: ".", prompt: `${assets.agentPrompt}\n\n${serverInstructions}` },
+		director: {
+			description: "Directs design work in Paper through the designer subagent.",
+			model: "opus",
+			prompt: `${assets.agentPrompt}\n\n${assets.directorPrompt}\n\n${serverInstructions}`,
+		},
+		designer: {
+			description: "Executes a design brief in Paper and reports back with a screenshot path.",
+			model: "haiku",
+			prompt: `${assets.agentPrompt}\n\n${assets.designerPrompt}\n\n${serverInstructions}`,
+		},
 	});
 }
 
@@ -70,17 +80,18 @@ export function runDesignerClaude(passthrough: readonly string[]) {
 		const child = Bun.spawn(
 			[
 				claude,
-				"--model",
-				"opus",
 				"--dangerously-skip-permissions",
 				"--mcp-config",
 				mcpConfig(),
 				"--plugin-dir",
 				materializePluginDir(),
+				// Skips the user's global CLAUDE.md, hooks, and settings so their orchestration rules don't leak in.
+				"--setting-sources",
+				"project,local",
 				"--agents",
 				agents,
 				"--agent",
-				"designer",
+				"director",
 				...passthrough,
 			],
 			{ stdin: "inherit", stdout: "inherit", stderr: "inherit" },
