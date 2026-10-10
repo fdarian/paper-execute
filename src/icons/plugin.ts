@@ -106,7 +106,6 @@ function buildIconTools() {
 					}
 					return yield* readIconSvg({
 						name: match.name,
-						weight: "regular",
 						size: undefined,
 						color: undefined,
 					});

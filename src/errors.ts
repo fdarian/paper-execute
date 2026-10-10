@@ -1,9 +1,17 @@
 import { Schema } from "effect";
 
+// `__executorUserActionable`, `code` and `userMessage` make executor pass the message to sandbox code
+// instead of replacing it with an opaque "Internal tool error".
 export class IconSearchError extends Schema.TaggedError<IconSearchError>()("IconSearchError", {
 	query: Schema.String,
 	reason: Schema.String,
-}) {}
+}) {
+	readonly __executorUserActionable = true;
+	readonly code = "icon_search_failed";
+	get userMessage() {
+		return `${this.reason}: ${this.query}`;
+	}
+}
 
 export class PaperPluginConfigError extends Schema.TaggedError<PaperPluginConfigError>()(
 	"PaperPluginConfigError",
@@ -32,12 +40,15 @@ export class PaperPluginRegistryError extends Schema.TaggedError<PaperPluginRegi
 
 export class IconSvgError extends Schema.TaggedError<IconSvgError>()("IconSvgError", {
 	name: Schema.String,
-	weight: Schema.String,
-	cause: Schema.Defect(),
-}) {}
+	reason: Schema.String,
+}) {
+	readonly __executorUserActionable = true;
+	readonly code = "icon_svg_unavailable";
+	get userMessage() {
+		return this.reason;
+	}
+}
 
-// `__executorUserActionable`, `code` and `userMessage` make executor pass the message to sandbox code
-// instead of replacing it with an opaque "Internal tool error".
 export class ImageReadError extends Schema.TaggedError<ImageReadError>()("ImageReadError", {
 	path: Schema.String,
 	reason: Schema.String,

@@ -2,23 +2,15 @@ import { Effect } from "effect";
 
 import { IconSvgError } from "#/errors";
 
-const iconWeights = ["regular", "thin", "light", "bold", "fill", "duotone"] as const;
+import { readRegularIconSvgs } from "./svg-assets.ts" with { type: "macro" };
 
-type IconWeight = (typeof iconWeights)[number];
+const regularSvgs = readRegularIconSvgs();
 
 type IconSvgOptions = {
 	readonly name: string;
-	readonly weight: IconWeight;
 	readonly size?: number;
 	readonly color?: string;
 };
-
-function resolveIconSvgPath(name: string, weight: IconWeight): string {
-	return new URL(
-		`../../node_modules/@phosphor-icons/core/assets/${weight}/${name}.svg`,
-		import.meta.url,
-	).pathname;
-}
 
 function patchSvg(svg: string, options: IconSvgOptions): string {
 	let patched = svg;
@@ -32,15 +24,18 @@ function patchSvg(svg: string, options: IconSvgOptions): string {
 }
 
 export function readIconSvg(options: IconSvgOptions) {
-	return Effect.tryPromise({
-		try: async () => {
-			const file = Bun.file(resolveIconSvgPath(options.name, options.weight));
-			const svg = await file.text();
+	return Effect.try({
+		try: () => {
+			const svg = Object.hasOwn(regularSvgs, options.name) ? regularSvgs[options.name] : undefined;
+			if (svg === undefined) {
+				throw new Error(`No icon named "${options.name}"`);
+			}
 			return patchSvg(svg, options);
 		},
-		catch: (cause) => new IconSvgError({ name: options.name, weight: options.weight, cause }),
+		catch: (cause) =>
+			new IconSvgError({
+				name: options.name,
+				reason: cause instanceof Error ? cause.message : String(cause),
+			}),
 	});
 }
-
-export type { IconWeight };
-export { iconWeights };
