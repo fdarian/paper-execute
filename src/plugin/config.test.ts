@@ -31,3 +31,12 @@ test("rejects inheritSettings values that are neither true nor a string array", 
 		decodePluginConfig({ plugins: [], cc: { inheritSettings: { theme: "dark" } } }),
 	).toThrow();
 });
+
+test("decodes arbitrary cc.settings", () => {
+	const config = decodePluginConfig({
+		plugins: [],
+		cc: { settings: { claudeMdExcludes: ["/x/**"], nested: { a: 1 } } },
+	});
+	expect(config.cc?.settings).toEqual({ claudeMdExcludes: ["/x/**"], nested: { a: 1 } });
+	expect(() => decodePluginConfig({ plugins: [], cc: { settings: "no" } })).toThrow();
+});

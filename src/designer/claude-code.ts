@@ -12,7 +12,7 @@ import { buildSettings } from "./settings.ts";
 
 const assets = readDesignerAssets();
 
-function materializePluginDir(): string {
+export function materializePluginDir(): string {
 	const hash = Bun.hash(JSON.stringify(assets.pluginFiles)).toString(36);
 	const root = join(tmpdir(), "designer");
 	const target = join(root, `paper-refs-${hash}`);
@@ -38,24 +38,20 @@ function materializePluginDir(): string {
 	return target;
 }
 
-function mcpConfig(): string {
+export function paperMcpServer() {
 	const compiled = Bun.main.startsWith("/$bunfs/");
-	return JSON.stringify({
-		mcpServers: {
-			paper: {
-				type: "stdio",
-				command: process.execPath,
-				args: compiled ? ["mcp"] : [Bun.main, "mcp"],
-				alwaysLoad: true,
-			},
-		},
-	});
+	return {
+		type: "stdio",
+		command: process.execPath,
+		args: compiled ? ["mcp"] : [Bun.main, "mcp"],
+		alwaysLoad: true,
+	} as const;
 }
 
 // Agent prompts replace the system prompt and subagents don't receive MCP server instructions,
 // so both agents carry the server instructions themselves.
-function agentsConfig(serverInstructions: string): string {
-	return JSON.stringify({
+export function designerAgents(serverInstructions: string) {
+	return {
 		director: {
 			description: "Directs design work in Paper through the designer subagent.",
 			model: "opus",
@@ -66,16 +62,19 @@ function agentsConfig(serverInstructions: string): string {
 			model: "haiku",
 			prompt: `${assets.agentPrompt}\n\n${assets.designerPrompt}\n\n${serverInstructions}`,
 		},
-	});
+	} as const;
 }
 
-function settingsArgs(inheritSettings: InheritSettings): string[] {
+export function designerSettings(
+	inheritSettings: InheritSettings,
+	literalSettings: Record<string, unknown>,
+): Record<string, unknown> {
 	const configDir = process.env.CLAUDE_CONFIG_DIR ?? join(homedir(), ".claude");
 	const path = join(configDir, "settings.json");
 	const userSettings: Record<string, unknown> = existsSync(path)
 		? JSON.parse(readFileSync(path, "utf8"))
 		: {};
-	return ["--settings", JSON.stringify(buildSettings(userSettings, inheritSettings))];
+	return buildSettings(userSettings, inheritSettings, literalSettings);
 }
 
 export interface DesignerClaudeOptions {
@@ -93,21 +92,27 @@ export function runDesignerClaude(options: DesignerClaudeOptions) {
 			);
 		}
 		const booted = yield* bootPluginRegistry();
-		const agents = agentsConfig(buildServerInstructions(booted.registry.instructionsText));
+		const agents = designerAgents(buildServerInstructions(booted.registry.instructionsText));
 		const child = Bun.spawn(
 			[
 				claude,
 				"--dangerously-skip-permissions",
 				"--mcp-config",
-				mcpConfig(),
+				JSON.stringify({ mcpServers: { paper: paperMcpServer() } }),
 				"--plugin-dir",
 				materializePluginDir(),
-				// Skips the user's global CLAUDE.md, hooks, and settings so their orchestration rules don't leak in.
+				// Scopes settings files only: ancestor-directory CLAUDE.md/rules (e.g. ~/.claude/CLAUDE.md) still load, so config `cc.settings.claudeMdExcludes` has to cover them.
 				"--setting-sources",
 				"project,local",
-				...settingsArgs(booted.config.cc?.inheritSettings ?? {}),
+				"--settings",
+				JSON.stringify(
+					designerSettings(
+						booted.config.cc?.inheritSettings ?? {},
+						booted.config.cc?.settings ?? {},
+					),
+				),
 				"--agents",
-				agents,
+				JSON.stringify(agents),
 				"--agent",
 				"director",
 				...(options.continue ? ["--continue"] : []),

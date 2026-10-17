@@ -18,6 +18,7 @@
 		"start": "bun run src/cli.ts mcp"
 	},
 	"dependencies": {
+		"@agentclientprotocol/claude-agent-acp": "0.93.0",
 		"@effect/platform-bun": "4.0.0-rc.115",
 		"@executor-js/execution": "^1.5.28",
 		"@executor-js/plugin-mcp": "^1.5.28",

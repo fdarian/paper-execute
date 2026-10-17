@@ -19,6 +19,7 @@ const PaperPluginConfigSchema = Schema.Struct({
 	cc: Schema.optional(
 		Schema.Struct({
 			inheritSettings: Schema.optional(Schema.Record(Schema.String, InheritSettingSchema)),
+			settings: Schema.optional(Schema.Record(Schema.String, Schema.Unknown)),
 		}),
 	),
 });
