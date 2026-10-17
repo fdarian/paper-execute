@@ -1,0 +1,106 @@
+diff --git a/dist/acp-agent.d.ts b/dist/acp-agent.d.ts
+index 59d68793cb3c05211b053cb6327d105717300cdf..fa94022fd2f24e76b44d8a8eade2e3b56f7a6d9f 100644
+--- a/dist/acp-agent.d.ts
++++ b/dist/acp-agent.d.ts
+@@ -1017,6 +1017,7 @@ export interface AcpClient {
+     /** Send a custom (extension) notification, e.g. `_claude/sdkMessage`. */
+     extNotification(method: string, params: Record<string, unknown>): Promise<void>;
+ }
++export type SessionOptionsHook = (provided: Options | undefined, params: NewSessionRequest | LoadSessionRequest | ResumeSessionRequest | ForkSessionRequest) => Options;
+ export declare class ClaudeAcpAgent {
+     sessions: {
+         [key: string]: Session;
+@@ -1069,6 +1070,8 @@ export declare class ClaudeAcpAgent {
+     private readonly v2;
+     /** See the `foreground` constructor option. */
+     private readonly foregroundEvents?;
++    /** See the `sessionOptions` constructor option. */
++    private readonly sessionOptions?;
+     /**
+      * The foreground work of each session while it runs, by the session id that
+      * the client knows, on every connection: only the `foreground` option
+@@ -1089,6 +1092,12 @@ export declare class ClaudeAcpAgent {
+          * ended from its prompt response.
+          */
+         foreground?: (sessionId: string) => ForegroundEvents;
++        /**
++         * Replaces the SDK options a client passes in `_meta.claudeCode.options`
++         * for every session the agent creates (new, load, resume, fork). The
++         * adapter's own options are applied after the result, so they still win.
++         */
++        sessionOptions?: SessionOptionsHook;
+     });
+     initialize(request: InitializeRequest): Promise<InitializeResponse>;
+     newSession(params: NewSessionRequest): Promise<NewSessionResponse>;
+@@ -1887,9 +1896,9 @@ export declare function runPromptWithCancellation(agent: Pick<ClaudeAcpAgent, "p
+  * any inbound message, so every handler below sees the agent. `onAgent`
+  * receives it for the owner of the process (shutdown).
+  */
+-export declare function v1AgentApp(logger: Logger | undefined, onAgent: (agent: ClaudeAcpAgent) => void): AgentApp;
++export declare function v1AgentApp(logger: Logger | undefined, onAgent: (agent: ClaudeAcpAgent) => void, agentOptions?: ConstructorParameters<typeof ClaudeAcpAgent>[2]): AgentApp;
+ /** Serves ACP v1 on stdio. */
+-export declare function runAcp(logger?: Logger): {
++export declare function runAcp(logger?: Logger, options?: ConstructorParameters<typeof ClaudeAcpAgent>[2]): {
+     connection: import("@agentclientprotocol/sdk").AgentConnection;
+     agent: ClaudeAcpAgent;
+ };
+diff --git a/dist/acp-agent.js b/dist/acp-agent.js
+index 67f4a1d7bc9564a94c5bfa7c86061b7969314f90..a6f3e275960f5378549c41720aabee08c3b0c884 100644
+--- a/dist/acp-agent.js
++++ b/dist/acp-agent.js
+@@ -1217,6 +1217,8 @@ export class ClaudeAcpAgent {
+     v2;
+     /** See the `foreground` constructor option. */
+     foregroundEvents;
++    /** See the `sessionOptions` constructor option. */
++    sessionOptions;
+     /**
+      * The foreground work of each session while it runs, by the session id that
+      * the client knows, on every connection: only the `foreground` option
+@@ -1235,6 +1237,7 @@ export class ClaudeAcpAgent {
+     constructor(client, logger, options = {}) {
+         this.v2 = options.v2 ?? false;
+         this.foregroundEvents = options.foreground;
++        this.sessionOptions = options.sessionOptions;
+         this.sessions = {};
+         this.client = new ChangedMetaClient(client, () => this.toolCallCapabilities.air.client);
+         this.logger = logger ?? console;
+@@ -8351,7 +8354,9 @@ export class ClaudeAcpAgent {
+             resumed: resumedPermissionMode,
+             defaultMode: settingsManager.getSettings().permissions?.defaultMode,
+         }, this.logger, allowBypass);
+-        const userProvidedOptions = sessionMeta?.claudeCode?.options;
++        const userProvidedOptions = this.sessionOptions
++            ? this.sessionOptions(sessionMeta?.claudeCode?.options, params)
++            : sessionMeta?.claudeCode?.options;
+         const forwardSubagentText = this.forwardsSubagentText(params._meta);
+         // Configure thinking behavior from environment variable
+         const thinking = resolveThinkingConfig(process.env.MAX_THINKING_TOKENS, this.logger);
+@@ -10417,11 +10422,11 @@ export async function runPromptWithCancellation(agent, params, signal) {
+  * any inbound message, so every handler below sees the agent. `onAgent`
+  * receives it for the owner of the process (shutdown).
+  */
+-export function v1AgentApp(logger, onAgent) {
++export function v1AgentApp(logger, onAgent, agentOptions) {
+     let agent;
+     const app = acpAgent({ name: "claude-code-acp" })
+         .onConnect((connection) => {
+-        agent = new ClaudeAcpAgent(new ClientConnection(connection.client), logger);
++        agent = new ClaudeAcpAgent(new ClientConnection(connection.client), logger, agentOptions);
+         onAgent(agent);
+     })
+         .onRequest(methods.agent.initialize, (ctx) => agent.initialize(ctx.params))
+@@ -10447,11 +10452,11 @@ export function v1AgentApp(logger, onAgent) {
+     return sessionIndex.onSessionIndexRequests(app, () => agent);
+ }
+ /** Serves ACP v1 on stdio. */
+-export function runAcp(logger) {
++export function runAcp(logger, options) {
+     const stream = ndJsonStream(nodeToWebWritable(process.stdout), nodeToWebReadable(process.stdin));
+     let agent;
+     // `connect` runs the connect handlers before it returns, so `agent` is set.
+-    const connection = v1AgentApp(logger, (created) => (agent = created)).connect(stream);
++    const connection = v1AgentApp(logger, (created) => (agent = created), options).connect(stream);
+     return { connection, agent };
+ }
+ function commonPrefixLength(a, b) {
