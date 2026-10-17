@@ -163,7 +163,7 @@ settings:
   excludeLinksFromLockfile: false
 
 patchedDependencies:
-  '@agentclientprotocol/claude-agent-acp@0.93.0': 655d64d00e5460e68593aee92e4edbe91c2745b038b4b9a65cc0b4ca08797552
+  '@agentclientprotocol/claude-agent-acp@0.93.0': bafd4d40882dc46a8cd5506b08905c981ca6c143375cbe403512e2dacede030c
   '@executor-js/config@1.6.8': 618e4317d9316b35ced28db8a67be3c3969acd07bd5d81c39b8473002f00b89e
   '@executor-js/plugin-mcp@1.6.8': 4f14ee24de495cfbcb32576d050714a9ac5e31e07465415711dba7a796c8a87b
   '@executor-js/sdk@1.6.8': 75d0f04bd254d9921323dd9e7e50ccadfa8e7e9ea00b121fb931be97c34ef4b2
@@ -174,7 +174,7 @@ importers:
     dependencies:
       '@agentclientprotocol/claude-agent-acp':
         specifier: 0.93.0
-        version: 0.93.0(patch_hash=655d64d00e5460e68593aee92e4edbe91c2745b038b4b9a65cc0b4ca08797552)(@anthropic-ai/sdk@0.135.0(zod@4.6.5))(@modelcontextprotocol/sdk@1.30.0(@cfworker/json-schema@4.1.1)(zod@4.6.5))
+        version: 0.93.0(patch_hash=bafd4d40882dc46a8cd5506b08905c981ca6c143375cbe403512e2dacede030c)(@anthropic-ai/sdk@0.135.0(zod@4.6.5))(@modelcontextprotocol/sdk@1.30.0(@cfworker/json-schema@4.1.1)(zod@4.6.5))
       '@effect/platform-bun':
         specifier: 4.0.0-rc.115
         version: 4.0.0-rc.115(effect@4.0.0-rc.115)
@@ -1418,7 +1418,7 @@ packages:
 
 snapshots:
 
-  '@agentclientprotocol/claude-agent-acp@0.93.0(patch_hash=655d64d00e5460e68593aee92e4edbe91c2745b038b4b9a65cc0b4ca08797552)(@anthropic-ai/sdk@0.135.0(zod@4.6.5))(@modelcontextprotocol/sdk@1.30.0(@cfworker/json-schema@4.1.1)(zod@4.6.5))':
+  '@agentclientprotocol/claude-agent-acp@0.93.0(patch_hash=bafd4d40882dc46a8cd5506b08905c981ca6c143375cbe403512e2dacede030c)(@anthropic-ai/sdk@0.135.0(zod@4.6.5))(@modelcontextprotocol/sdk@1.30.0(@cfworker/json-schema@4.1.1)(zod@4.6.5))':
     dependencies:
       '@agentclientprotocol/sdk': 1.9.0(zod@4.6.7)
       '@anthropic-ai/claude-agent-sdk': 0.3.300(@anthropic-ai/sdk@0.135.0(zod@4.6.5))(@modelcontextprotocol/sdk@1.30.0(@cfworker/json-schema@4.1.1)(zod@4.6.5))(zod@4.6.7)
