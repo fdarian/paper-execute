@@ -3,6 +3,7 @@
 import { BunRuntime, BunServices } from "@effect/platform-bun";
 import { Effect } from "effect";
 import { Argument, Command, Flag } from "effect/unstable/cli";
+import { runDesignerAcp } from "#/designer/acp";
 import { runDesignerClaude } from "#/designer/claude-code";
 import { serveStdio } from "#/mcp/stdio";
 import pkg from "../package.json" with { type: "json" };
@@ -40,7 +41,13 @@ const cc = Command.make(
 	),
 );
 
-const designer = Command.make("designer").pipe(Command.withSubcommands([mcp, cc]));
+const acp = Command.make("acp", {}, () =>
+	runDesignerAcp().pipe(Effect.flatMap(() => Effect.sync(() => process.exit(0)))),
+).pipe(
+	Command.withDescription("Run the designer agent as an ACP server over stdio (claude-agent-acp)"),
+);
+
+const designer = Command.make("designer").pipe(Command.withSubcommands([mcp, cc, acp]));
 
 // No top-level await: `--bytecode` compiles to CommonJS.
 Command.run(designer, { version: pkg.version }).pipe(
