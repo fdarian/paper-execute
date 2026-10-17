@@ -12,6 +12,8 @@ import {
 
 type SessionOptions = NonNullable<NonNullable<Parameters<typeof runAcp>[1]>["sessionOptions"]>;
 
+const designerModel = "opus";
+
 export function runDesignerAcp() {
 	return Effect.gen(function* () {
 		// stdout carries the JSON-RPC stream, so nothing else may write to it.
@@ -29,6 +31,10 @@ export function runDesignerAcp() {
 			}
 			process.env.CLAUDE_CODE_EXECUTABLE = claude;
 		}
+		// The adapter resolves the model for its `model` config option and for resume from ANTHROPIC_MODEL or on-disk settings files only,
+		// never from the inline `settings` below, so without this it reports Sonnet and switches resumed sessions to it.
+		// The designer subagent pins its own model, so inheriting this in the claude child doesn't affect it.
+		process.env.ANTHROPIC_MODEL = designerModel;
 		const booted = yield* bootPluginRegistry();
 
 		// Computed once: the adapter calls the hook for every new/load/resume/fork and expects the same options each time.
@@ -39,7 +45,7 @@ export function runDesignerAcp() {
 				booted.config.cc?.inheritSettings ?? {},
 				booted.config.cc?.settings ?? {},
 			),
-			model: "opus",
+			model: designerModel,
 		};
 		const paper = paperMcpServer();
 		const sessionOptions: SessionOptions = (provided) => ({
