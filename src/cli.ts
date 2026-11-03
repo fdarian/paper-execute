@@ -7,6 +7,7 @@ import type { DesignBackend } from "#/backend";
 import { brilliantBackend } from "#/backend/brilliant";
 import { executorLaunch } from "#/backend/launch";
 import { paperBackend } from "#/backend/paper";
+import { runDesignerAcp } from "#/designer/acp";
 import { type DesignerClaudeOptions, runDesignerClaude } from "#/designer/claude-code";
 import { draftLaunch } from "#/draft/launch";
 import { serveDraftStdio } from "#/draft/mcp";
@@ -101,8 +102,20 @@ const draft = Command.make("draft").pipe(
 	Command.withSubcommands([draftMcp, draftCc, draftView]),
 );
 
+const acp = Command.make("acp", {}, () =>
+	runDesignerAcp().pipe(Effect.flatMap(() => Effect.sync(() => process.exit(0)))),
+).pipe(
+	Command.withDescription("Run the designer agent as an ACP server over stdio (claude-agent-acp)"),
+);
+
 const designer = Command.make("designer").pipe(
-	Command.withSubcommands([mcpCommand(paperBackend), ccCommand(paperBackend), brilliant, draft]),
+	Command.withSubcommands([
+		mcpCommand(paperBackend),
+		ccCommand(paperBackend),
+		acp,
+		brilliant,
+		draft,
+	]),
 );
 
 // No top-level await: `--bytecode` compiles to CommonJS.

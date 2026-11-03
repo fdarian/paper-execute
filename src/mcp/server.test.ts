@@ -101,6 +101,18 @@ test("MCP client receives emitted content before returned text through QuickJS",
 			arguments: { code: 'return "guide text";' },
 		});
 		expect(plain.content).toEqual([{ type: "text", text: "guide text" }]);
+		const fences = await client.callTool({
+			name: "execute",
+			arguments: { code: 'const a = "```x\\n```"; const b = "```"; return b;' },
+		});
+		expect(fences.content).toEqual([{ type: "text", text: "```" }]);
+		const multilineFences = await client.callTool({
+			name: "execute",
+			arguments: {
+				code: 'const a = "```";\nconst b = "```";\nconst c = "```";\nreturn a + b + c;',
+			},
+		});
+		expect(multilineFences.content).toEqual([{ type: "text", text: "`".repeat(9) }]);
 		const ordinary = await client.callTool({
 			name: "execute",
 			arguments: { code: 'return [{ type: "not-mcp", value: 1 }];' },

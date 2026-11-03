@@ -9,15 +9,16 @@
 	"exports": {
 		"./plugin": "./src/plugin/index.ts"
 	},
-	"packageManager": "pnpm@12.9.0",
+	"packageManager": "pnpm@12.16.1",
 	"scripts": {
-		"check:type": "tsc --noEmit",
+		"check:type": "tsrs --noEmit",
 		"check:lint": "biome check .",
 		"format": "biome format --write .",
 		"build": "bun build --compile --bytecode --compile-autoload-package-json --compile-autoload-tsconfig src/cli.ts --outfile dist/cli/designer",
 		"start": "bun run src/cli.ts mcp"
 	},
 	"dependencies": {
+		"@agentclientprotocol/claude-agent-acp": "0.93.0",
 		"@effect/platform-bun": "4.0.0-rc.115",
 		"@executor-js/execution": "^1.5.28",
 		"@executor-js/plugin-mcp": "^1.5.28",
@@ -35,6 +36,7 @@
 		"@biomejs/biome": "^2.5.2",
 		"@total-typescript/tsconfig": "^1.0.4",
 		"bun-types": "^1.3.14",
+		"tsrs": "0.18.0-ts7.1.0-dev.20260929",
 		"typescript": "^6.0.3"
 	},
 	"patchedDependencies": {

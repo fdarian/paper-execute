@@ -1,0 +1,13 @@
+diff --git a/dist/index.js b/dist/index.js
+index c45e5ca110e8d5dfe580180e38134ef0a3b4aedd..391de5d0dc44a62e675d0a55599fdbdc54e32151 100644
+--- a/dist/index.js
++++ b/dist/index.js
+@@ -151,7 +151,7 @@ var standardSchemaFromJsonSchema = (schema, options) => {
+ 
+ // src/code-recovery.ts
+ import { parse } from "@babel/parser";
+-var FENCED_CODE_BLOCK = /```(?:[^\n`]*)?\s*\n([\s\S]*?)```/i;
++var FENCED_CODE_BLOCK = /^```(?:[^\n`]*)?\s*\n([\s\S]*?)```/i;
+ var FUNCTION_DECLARATION = /^(?:async\s+)?function(?:\s+([a-zA-Z_$][a-zA-Z0-9_$]*))?\s*\(/;
+ var CALLABLE_ERROR = "Code must evaluate to a function";
+ var extractCandidateSource = (code) => {
