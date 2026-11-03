@@ -36,20 +36,18 @@ afterAll(async () => {
 });
 
 describe("icon rewrite", () => {
-	test("expands to an inline 1em svg and keeps other attributes", async () => {
+	test("fills the element with a 1em svg and keeps its attributes", async () => {
 		const result = await rewriteIcons(
 			`<p><i data-icon="heart" data-weight="fill" class="big" style="color:red"></i></p>`,
 		);
 		expect(result.warnings).toEqual([]);
-		expect(result.html).not.toContain("<i ");
-		expect(result.html).toContain('width="1em" height="1em" fill="currentColor"');
 		expect(result.html).toContain('class="big"');
-		expect(result.html).toContain('style="color:red"');
-		expect(result.html).not.toContain("data-icon");
+		expect(result.html).toContain("display:inline-flex;color:red");
+		expect(result.html).toContain('<svg width="1em" height="1em" ');
+		expect(result.html).toContain('fill="currentColor"');
 		const regular = await rewriteIcons(`<i data-icon="heart"></i>`);
-		expect(regular.html).not.toBe(
-			(await rewriteIcons(`<i data-icon="heart" data-weight="bold"></i>`)).html,
-		);
+		const bold = await rewriteIcons(`<i data-icon="heart" data-weight="bold"></i>`);
+		expect(regular.html).not.toBe(bold.html);
 	});
 
 	test("reports unknown icons and weights and leaves the element", async () => {
@@ -59,7 +57,7 @@ describe("icon rewrite", () => {
 		expect(result.warnings).toHaveLength(2);
 		expect(result.warnings[0]).toContain("no-such-icon");
 		expect(result.warnings[1]).toContain("neon");
-		expect(result.html).toContain("<i ");
+		expect(result.html).not.toContain("<svg");
 	});
 });
 

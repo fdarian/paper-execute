@@ -5,13 +5,7 @@ export type IconRewrite = {
 	readonly warnings: readonly string[];
 };
 
-const droppedAttributes = new Set(["data-icon", "data-weight"]);
-
-function escapeAttribute(value: string): string {
-	return value.replaceAll("&", "&amp;").replaceAll('"', "&quot;");
-}
-
-/** Expands `<i data-icon="name" data-weight="bold">` into the inline Phosphor SVG. */
+/** Fills `<i data-icon="name" data-weight="bold">` with the inline Phosphor SVG, 1em square in `currentColor`. */
 export async function rewriteIcons(html: string): Promise<IconRewrite> {
 	const warnings: string[] = [];
 	const rewriter = new HTMLRewriter().on("i[data-icon]", {
@@ -34,17 +28,12 @@ export async function rewriteIcons(html: string): Promise<IconRewrite> {
 				warnings.push(`icon: unknown icon "${name}"`);
 				return;
 			}
-			const passthrough: string[] = [];
-			for (const [attribute, value] of element.attributes) {
-				if (!droppedAttributes.has(attribute)) {
-					passthrough.push(`${attribute}="${escapeAttribute(value)}"`);
-				}
-			}
-			const attributes = ['width="1em"', 'height="1em"', 'fill="currentColor"', ...passthrough];
-			const sized = svg
-				.replace(' fill="currentColor"', "")
-				.replace("<svg ", `<svg ${attributes.join(" ")} `);
-			element.replace(sized, { html: true });
+			// The <i> stays so author selectors like `.card i { font-size: 32px }` keep working.
+			const style = element.getAttribute("style");
+			element.setAttribute("style", `display:inline-flex;${style === null ? "" : style}`);
+			element.setInnerContent(svg.replace("<svg ", '<svg width="1em" height="1em" '), {
+				html: true,
+			});
 		},
 	});
 	const rewritten = await rewriter.transform(new Response(html)).text();
