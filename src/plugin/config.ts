@@ -15,6 +15,7 @@ const InheritSettingSchema = Schema.Union([Schema.Literal(true), Schema.Array(Sc
 
 const PaperPluginConfigSchema = Schema.Struct({
 	paperMcpUrl: Schema.optional(Schema.String),
+	brilliantMcpUrl: Schema.optional(Schema.String),
 	plugins: Schema.Array(PluginEntrySchema),
 	cc: Schema.optional(
 		Schema.Struct({

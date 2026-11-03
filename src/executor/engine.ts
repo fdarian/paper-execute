@@ -13,11 +13,10 @@ import {
 } from "@executor-js/sdk/core";
 import { Effect } from "effect";
 
+import { type DesignBackend, resolveMcpUrl } from "#/backend";
 import { PaperExecutorError } from "#/errors";
 import { bootPluginRegistry } from "#/plugin/boot";
 import type { PaperPluginRegistry } from "#/plugin/registry";
-
-const defaultPaperMcpUrl = "http://127.0.0.1:29979/mcp";
 
 /**
  * A connection stores its value in a writable credential provider — even a
@@ -43,12 +42,12 @@ export type PaperExecutionRuntime = {
 	readonly pluginRegistry: PaperPluginRegistry;
 };
 
-export function buildExecutionEngine() {
+export function buildExecutionEngine(backend: DesignBackend) {
 	return Effect.gen(function* () {
 		const booted = yield* bootPluginRegistry();
 		const pluginConfig = booted.config;
 		const pluginRegistry = booted.registry;
-		const paperMcpUrl = pluginConfig.paperMcpUrl ?? process.env.PAPER_MCP_URL ?? defaultPaperMcpUrl;
+		const mcpUrl = resolveMcpUrl(backend, pluginConfig);
 		const executor = yield* createExecutor({
 			tenant: Tenant.make("paper-execute"),
 			plugins: [mcpPlugin(), pluginRegistry.executorPlugin()],
@@ -61,23 +60,23 @@ export function buildExecutionEngine() {
 		const mcp: McpPluginExtension = executor.mcp;
 
 		yield* Effect.gen(function* () {
-			const paper = yield* mcp.addServer({
+			const server = yield* mcp.addServer({
 				transport: "remote",
-				name: "Paper",
-				endpoint: paperMcpUrl,
-				slug: "paper",
+				name: backend.name,
+				endpoint: mcpUrl,
+				slug: backend.slug,
 			});
 			yield* executor.connections.create({
 				owner: "org",
 				name: ConnectionName.make("default"),
-				integration: IntegrationSlug.make(paper.slug),
+				integration: IntegrationSlug.make(server.slug),
 				template: AuthTemplateSlug.make("none"),
 				inputs: {},
 			});
 		}).pipe(
 			Effect.catchCause((cause) =>
 				Effect.logWarning(
-					"Paper MCP wiring failed at boot; paper.* calls will fail until Paper is reachable",
+					`${backend.name} MCP wiring failed at boot; ${backend.slug}.* calls will fail until ${backend.name} is reachable`,
 					cause,
 				),
 			),

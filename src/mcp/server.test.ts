@@ -6,6 +6,8 @@ import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { InMemoryTransport } from "@modelcontextprotocol/sdk/inMemory.js";
 import { Effect } from "effect";
 
+import { brilliantBackend } from "#/backend/brilliant";
+import { paperBackend } from "#/backend/paper";
 import { iconPlugin } from "#/icons/plugin";
 import { imagePlugin } from "#/image/plugin";
 import { createPaperExecuteServer } from "#/mcp/server";
@@ -21,6 +23,7 @@ test("MCP client receives emitted content before returned text through QuickJS",
 		}),
 	);
 	const server = createPaperExecuteServer(
+		paperBackend,
 		createExecutionEngine({ executor, codeExecutor: makeQuickJsExecutor() }),
 		registry.instructionsText,
 		registry.callsSummary,
@@ -32,19 +35,18 @@ test("MCP client receives emitted content before returned text through QuickJS",
 	await client.connect(transports[1]);
 	try {
 		const tools = await client.listTools();
-		expect(tools.tools[0]?.description).toContain("return t.summary;");
-		expect(tools.tools[0]?.description).toContain("return f.nodes;");
+		expect(tools.tools[0]?.description).toContain("`paper.<tool>(args)`");
 		const merged = await client.callTool({
 			name: "execute",
 			arguments: {
-				code: 'return __unwrapPaper({ ok: true, data: { content: [{ type: "text", text: \'{"file":{},"contentHash":"hash"}\' }, { type: "text", text: \'{"summary":"tree","nodeId":"node","depth":2}\' }] } }).summary;',
+				code: 'return __unwrapMcp({ ok: true, data: { content: [{ type: "text", text: \'{"file":{},"contentHash":"hash"}\' }, { type: "text", text: \'{"summary":"tree","nodeId":"node","depth":2}\' }] } }).summary;',
 			},
 		});
 		expect(merged.content).toEqual([{ type: "text", text: "tree" }]);
 		const collision = await client.callTool({
 			name: "execute",
 			arguments: {
-				code: 'return __unwrapPaper({ ok: true, data: { content: [{ type: "text", text: \'{"x":1}\' }, { type: "text", text: \'{"x":2}\' }] } })[1].text;',
+				code: 'return __unwrapMcp({ ok: true, data: { content: [{ type: "text", text: \'{"x":1}\' }, { type: "text", text: \'{"x":2}\' }] } })[1].text;',
 			},
 		});
 		expect(collision.content).toEqual([{ type: "text", text: '{"x":2}' }]);
@@ -99,6 +101,18 @@ test("MCP client receives emitted content before returned text through QuickJS",
 			arguments: { code: 'return "guide text";' },
 		});
 		expect(plain.content).toEqual([{ type: "text", text: "guide text" }]);
+		const fences = await client.callTool({
+			name: "execute",
+			arguments: { code: 'const a = "```x\\n```"; const b = "```"; return b;' },
+		});
+		expect(fences.content).toEqual([{ type: "text", text: "```" }]);
+		const multilineFences = await client.callTool({
+			name: "execute",
+			arguments: {
+				code: 'const a = "```";\nconst b = "```";\nconst c = "```";\nreturn a + b + c;',
+			},
+		});
+		expect(multilineFences.content).toEqual([{ type: "text", text: "`".repeat(9) }]);
 		const ordinary = await client.callTool({
 			name: "execute",
 			arguments: { code: 'return [{ type: "not-mcp", value: 1 }];' },
@@ -137,6 +151,7 @@ test("plugin instructions lead the server instructions and calls are listed in t
 		}),
 	);
 	const server = createPaperExecuteServer(
+		paperBackend,
 		createExecutionEngine({ executor, codeExecutor: makeQuickJsExecutor() }),
 		registry.instructionsText,
 		registry.callsSummary,
@@ -162,6 +177,56 @@ test("plugin instructions lead the server instructions and calls are listed in t
 		expect(description).toContain(
 			"Plugins: plugins.icon.search(...), plugins.icon.get(...), plugins.image.get(...)",
 		);
+	} finally {
+		await client.close();
+		await server.close();
+	}
+});
+
+test("Brilliant backend swaps the sandbox global, instructions, and execute description", async () => {
+	const registry = await Effect.runPromise(createPluginRegistry([iconPlugin]));
+	const executor = await Effect.runPromise(
+		createExecutor({
+			tenant: Tenant.make("test"),
+			plugins: [registry.executorPlugin()],
+			onElicitation: "accept-all",
+		}),
+	);
+	const server = createPaperExecuteServer(
+		brilliantBackend,
+		createExecutionEngine({ executor, codeExecutor: makeQuickJsExecutor() }),
+		registry.instructionsText,
+		registry.callsSummary,
+		registry.preambleSource,
+	);
+	const client = new Client({ name: "test", version: "1.0.0" });
+	const transports = InMemoryTransport.createLinkedPair();
+	await server.connect(transports[0]);
+	await client.connect(transports[1]);
+	try {
+		const instructions = client.getInstructions();
+		if (instructions === undefined) {
+			throw new Error("Server sent no instructions");
+		}
+		expect(instructions).toContain("Brilliant is a professional design tool");
+		expect(instructions).toContain("await brilliant.<tool>(args)");
+		expect(instructions).toContain('namespace: "brilliant"');
+		expect(instructions).not.toContain("Paper");
+		expect(instructions).not.toContain("paper.");
+		expect(instructions.indexOf("Brilliant is a professional design tool")).toBeLessThan(
+			instructions.indexOf("# execute"),
+		);
+		const description = (await client.listTools()).tools[0]?.description;
+		expect(description).toContain("Brilliant APIs");
+		expect(description).toContain("`brilliant.<tool>(args)`");
+		expect(description).not.toContain("Paper");
+		const globals = await client.callTool({
+			name: "execute",
+			arguments: { code: "return [typeof brilliant, typeof paper];" },
+		});
+		expect(globals.content).toEqual([
+			{ type: "text", text: JSON.stringify(["object", "undefined"], null, 2) },
+		]);
 	} finally {
 		await client.close();
 		await server.close();

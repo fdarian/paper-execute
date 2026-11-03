@@ -36,7 +36,7 @@ const IconGetOutput = Schema.toStandardSchemaV1(Schema.String);
 export const iconPlugin = definePaperPlugin({
 	name: "icon",
 	instructions:
-		"When the user wants an icon in a design, use the icon plugin instead of hand-writing SVG. `plugins.icon.get(name)` returns Phosphor SVG markup to embed in `paper.write_html`; `plugins.icon.search(query)` returns candidate icon matches.",
+		"When the user wants an icon in a design, use the icon plugin instead of hand-writing SVG. `plugins.icon.get(name)` returns Phosphor SVG markup to embed in the HTML you write; `plugins.icon.search(query)` returns candidate icon matches.",
 	tools: buildIconTools(),
 });
 

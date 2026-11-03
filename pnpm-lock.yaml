@@ -164,6 +164,7 @@ settings:
 
 patchedDependencies:
   '@agentclientprotocol/claude-agent-acp@0.93.0': bafd4d40882dc46a8cd5506b08905c981ca6c143375cbe403512e2dacede030c
+  '@executor-js/codemode-core@1.6.8': 7900c600006a37e77869acb16cd668f953914f4e142a8ca450f944a23493dcff
   '@executor-js/config@1.6.8': 618e4317d9316b35ced28db8a67be3c3969acd07bd5d81c39b8473002f00b89e
   '@executor-js/plugin-mcp@1.6.8': 4f14ee24de495cfbcb32576d050714a9ac5e31e07465415711dba7a796c8a87b
   '@executor-js/sdk@1.6.8': 75d0f04bd254d9921323dd9e7e50ccadfa8e7e9ea00b121fb931be97c34ef4b2
@@ -1571,7 +1572,7 @@ snapshots:
       - bufferutil
       - utf-8-validate
 
-  '@executor-js/codemode-core@1.6.8(effect@4.0.0-rc.115)':
+  '@executor-js/codemode-core@1.6.8(patch_hash=7900c600006a37e77869acb16cd668f953914f4e142a8ca450f944a23493dcff)(effect@4.0.0-rc.115)':
     dependencies:
       '@babel/parser': 7.29.8
       '@standard-schema/spec': 1.1.0
@@ -1595,7 +1596,7 @@ snapshots:
 
   '@executor-js/execution@1.6.8(@effect/platform-node@4.0.0-beta.59(effect@4.0.0-rc.115)(ioredis@5.11.1))(effect@4.0.0-rc.115)(react@19.3.0)(typeorm@0.3.31(ioredis@5.11.1))':
     dependencies:
-      '@executor-js/codemode-core': 1.6.8(effect@4.0.0-rc.115)
+      '@executor-js/codemode-core': 1.6.8(patch_hash=7900c600006a37e77869acb16cd668f953914f4e142a8ca450f944a23493dcff)(effect@4.0.0-rc.115)
       '@executor-js/sdk': 1.6.8(patch_hash=75d0f04bd254d9921323dd9e7e50ccadfa8e7e9ea00b121fb931be97c34ef4b2)(@effect/platform-node@4.0.0-beta.59(effect@4.0.0-rc.115)(ioredis@5.11.1))(effect@4.0.0-rc.115)(react@19.3.0)(typeorm@0.3.31(ioredis@5.11.1))
       effect: 4.0.0-rc.115
     transitivePeerDependencies:
@@ -1641,7 +1642,7 @@ snapshots:
 
   '@executor-js/runtime-quickjs@1.6.8(effect@4.0.0-rc.115)':
     dependencies:
-      '@executor-js/codemode-core': 1.6.8(effect@4.0.0-rc.115)
+      '@executor-js/codemode-core': 1.6.8(patch_hash=7900c600006a37e77869acb16cd668f953914f4e142a8ca450f944a23493dcff)(effect@4.0.0-rc.115)
       effect: 4.0.0-rc.115
       quickjs-emscripten: 0.31.0
 

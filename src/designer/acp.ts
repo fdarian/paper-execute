@@ -1,13 +1,14 @@
 import { runAcp } from "@agentclientprotocol/claude-agent-acp";
 import { Effect } from "effect";
 
+import { paperBackend } from "#/backend/paper";
 import { buildServerInstructions } from "#/mcp/instructions";
 import { bootPluginRegistry } from "#/plugin/boot";
 import {
 	designerAgents,
+	designerMcpServer,
 	designerSettings,
 	materializePluginDir,
-	paperMcpServer,
 } from "./claude-code.ts";
 
 type SessionOptions = NonNullable<NonNullable<Parameters<typeof runAcp>[1]>["sessionOptions"]>;
@@ -38,7 +39,10 @@ export function runDesignerAcp() {
 		const booted = yield* bootPluginRegistry();
 
 		// Computed once: the adapter calls the hook for every new/load/resume/fork and expects the same options each time.
-		const agents = designerAgents(buildServerInstructions(booted.registry.instructionsText));
+		const agents = designerAgents(
+			paperBackend,
+			buildServerInstructions(booted.registry.instructionsText, paperBackend),
+		);
 		const plugins = [{ type: "local", path: materializePluginDir() }] as const;
 		const settings = {
 			...designerSettings(
@@ -47,7 +51,7 @@ export function runDesignerAcp() {
 			),
 			model: designerModel,
 		};
-		const paper = paperMcpServer();
+		const paper = designerMcpServer(paperBackend);
 		const sessionOptions: SessionOptions = (provided) => ({
 			...provided,
 			agents,

@@ -2,17 +2,17 @@ import { expect, test } from "bun:test";
 import { runInNewContext } from "node:vm";
 import { Effect } from "effect";
 
-import { buildPaperExecutorPreamble } from "#/executor/preamble";
+import { buildExecutorPreamble } from "#/executor/preamble";
 import { iconPlugin } from "#/icons/plugin";
 import { createPluginRegistry } from "#/plugin/registry";
 
 const pluginRegistry = Effect.runSync(createPluginRegistry([iconPlugin]));
-const paperExecutorPreamble = buildPaperExecutorPreamble(pluginRegistry.preambleSource);
 
-function execute(result: unknown, code = "return await paper.example({});") {
-	return runInNewContext(`(async () => { ${paperExecutorPreamble}\n${code} })()`, {
+function execute(result: unknown, code = "return await paper.example({});", slug = "paper") {
+	const preamble = buildExecutorPreamble(slug, pluginRegistry.preambleSource);
+	return runInNewContext(`(async () => { ${preamble}\n${code} })()`, {
 		tools: {
-			paper: { org: { default: { example: async () => result } } },
+			[slug]: { org: { default: { example: async () => result } } },
 			paperPluginTools: {
 				plugin__icon__get: async () => ({ ok: true, data: "<svg/>" }),
 				plugin__icon__search: async () => ({ ok: true, data: ["acorn"] }),
@@ -151,4 +151,37 @@ test("raw and plugin-normalized Paper failures use all text blocks", async () =>
 test("icon helpers keep their existing unwrapping", async () => {
 	expect(await execute(undefined, 'return await plugins.icon.get("acorn");')).toBe("<svg/>");
 	expect(await execute(undefined, 'return await plugins.icon.search("acorn");')).toEqual(["acorn"]);
+});
+
+test("the backend slug names both the sandbox global and the tools namespace", async () => {
+	const data = { ok: true, data: { content: [{ type: "text", text: '{"projects":[]}' }] } };
+	expect(await execute(data, "return await brilliant.example({});", "brilliant")).toEqual({
+		projects: [],
+	});
+	expect(await execute(data, "return typeof paper;", "brilliant")).toBe("undefined");
+	expect(await execute(data, "return typeof brilliant;", "paper")).toBe("undefined");
+});
+
+test("Brilliant failures and image content follow the same unwrapping", async () => {
+	await expect(
+		execute(
+			{ ok: true, data: { isError: true, content: [{ type: "text", text: "no such project" }] } },
+			"return await brilliant.example({});",
+			"brilliant",
+		),
+	).rejects.toThrow("no such project");
+	const content = [
+		{ type: "text", text: "exported" },
+		{ type: "image", data: "aGVsbG8=", mimeType: "image/png" },
+	];
+	expect(
+		await execute(
+			{ ok: true, data: { content } },
+			"return await brilliant.example({});",
+			"brilliant",
+		),
+	).toBe(content);
+	expect(await execute(undefined, 'return await plugins.icon.get("acorn");', "brilliant")).toBe(
+		"<svg/>",
+	);
 });
