@@ -2,9 +2,18 @@ import { Effect } from "effect";
 
 import { IconSvgError } from "#/errors";
 
-import { readRegularIconSvgs } from "./svg-assets.ts" with { type: "macro" };
+import { readIconSvgsByWeight } from "./svg-assets.ts" with { type: "macro" };
 
-const regularSvgs = readRegularIconSvgs();
+const svgsByWeight = readIconSvgsByWeight();
+
+export const iconWeights = Object.keys(svgsByWeight);
+
+export function findIconSvg(name: string, weight: string): string | undefined {
+	if (!Object.hasOwn(svgsByWeight, weight)) return undefined;
+	const svgs = svgsByWeight[weight];
+	if (svgs === undefined || !Object.hasOwn(svgs, name)) return undefined;
+	return svgs[name];
+}
 
 type IconSvgOptions = {
 	readonly name: string;
@@ -26,7 +35,7 @@ function patchSvg(svg: string, options: IconSvgOptions): string {
 export function readIconSvg(options: IconSvgOptions) {
 	return Effect.try({
 		try: () => {
-			const svg = Object.hasOwn(regularSvgs, options.name) ? regularSvgs[options.name] : undefined;
+			const svg = findIconSvg(options.name, "regular");
 			if (svg === undefined) {
 				throw new Error(`No icon named "${options.name}"`);
 			}

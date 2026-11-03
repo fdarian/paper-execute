@@ -1,12 +1,14 @@
 #!/usr/bin/env bun
 
 import { BunRuntime, BunServices } from "@effect/platform-bun";
-import { Effect } from "effect";
+import { Effect, Option } from "effect";
 import { Argument, Command, Flag } from "effect/unstable/cli";
 import type { DesignBackend } from "#/backend";
 import { brilliantBackend } from "#/backend/brilliant";
 import { paperBackend } from "#/backend/paper";
 import { runDesignerClaude } from "#/designer/claude-code";
+import { serveDraftStdio } from "#/draft/mcp";
+import { serveDraftView } from "#/draft/view";
 import { serveStdio } from "#/mcp/stdio";
 import pkg from "../package.json" with { type: "json" };
 
@@ -51,8 +53,35 @@ const brilliant = Command.make("brilliant").pipe(
 	Command.withSubcommands([mcpCommand(brilliantBackend), ccCommand(brilliantBackend)]),
 );
 
+const draftMcp = Command.make(
+	"mcp",
+	{
+		dir: Flag.String("dir").pipe(Flag.withDescription("Absolute path of the project folder")),
+	},
+	(config) => Effect.tryPromise(() => serveDraftStdio(config.dir)),
+).pipe(Command.withDescription("Run the draft render MCP server over stdio"));
+
+const draftView = Command.make(
+	"view",
+	{
+		project: Flag.optional(Flag.String("project")).pipe(
+			Flag.withDescription("Project name (default: git repo or folder name of the cwd)"),
+		),
+		port: Flag.optional(Flag.Int("port")).pipe(Flag.withDescription("Port to listen on")),
+	},
+	(config) =>
+		Effect.tryPromise(() =>
+			serveDraftView(Option.getOrUndefined(config.project), Option.getOrUndefined(config.port)),
+		),
+).pipe(Command.withDescription("Serve a live gallery of the project's frames"));
+
+const draft = Command.make("draft").pipe(
+	Command.withDescription("Design with plain HTML files and a headless Chrome renderer"),
+	Command.withSubcommands([draftMcp, draftView]),
+);
+
 const designer = Command.make("designer").pipe(
-	Command.withSubcommands([mcpCommand(paperBackend), ccCommand(paperBackend), brilliant]),
+	Command.withSubcommands([mcpCommand(paperBackend), ccCommand(paperBackend), brilliant, draft]),
 );
 
 // No top-level await: `--bytecode` compiles to CommonJS.
