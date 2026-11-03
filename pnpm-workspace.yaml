@@ -2,6 +2,7 @@ allowBuilds:
   msgpackr-extract: false
 enableGlobalVirtualStore: true
 patchedDependencies:
+  '@executor-js/codemode-core@1.6.8': patches/@executor-js__codemode-core@1.6.8.patch
   '@executor-js/config@1.6.8': patches/@executor-js__config@1.6.8.patch
   '@executor-js/plugin-mcp@1.6.8': patches/@executor-js__plugin-mcp@1.6.8.patch
   '@executor-js/sdk@1.6.8': patches/@executor-js__sdk@1.6.8.patch
