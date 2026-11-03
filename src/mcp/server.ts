@@ -6,7 +6,8 @@ import { Effect } from "effect";
 import type * as Cause from "effect/Cause";
 import { z } from "zod";
 
-import { buildPaperExecutorPreamble } from "#/executor/preamble";
+import type { DesignBackend } from "#/backend";
+import { buildExecutorPreamble } from "#/executor/preamble";
 import { buildServerInstructions } from "#/mcp/instructions";
 
 type ExecuteResult = {
@@ -18,11 +19,10 @@ type ExecuteResult = {
 
 const textFileContentMaxChars = 64_000;
 
-function buildExecuteDescription(pluginCallsSummary: string): string {
+function buildExecuteDescription(backend: DesignBackend, pluginCallsSummary: string): string {
 	const lines = [
-		"Execute TypeScript in a sandbox with Paper APIs and configured plugins. Await tool calls. `return` serializes values as text; `emit(value)` sends native MCP content or files. See server instructions for the workflow.",
-		"`paper.<tool>(args)` throws on failure and returns structuredContent when present; otherwise, nonempty all-text content whose blocks each parse as JSON objects with no shared keys returns their shallow merge (including a single JSON-object block). Invalid JSON, arrays/null/primitives, key collisions, or non-text blocks fall back to a string for exactly one text item, otherwise the unchanged content array. There is no `.content` wrapper. Plugins return their bare data.",
-		"Screenshots: `const s = await paper.get_screenshot({ fileId, nodeId }); for (const c of s) if (c.type === 'image') emit(c);`. Tree summaries: `const t = await paper.get_tree_summary({ fileId, nodeId, depth: 2 }); return t.summary;`. Find nodes: `const f = await paper.find_nodes({ fileId, textValue: 'Submit' }); return f.nodes;`.",
+		`Execute TypeScript in a sandbox with ${backend.name} APIs and configured plugins. Await tool calls. \`return\` serializes values as text; \`emit(value)\` sends native MCP content or files. See server instructions for the workflow.`,
+		`\`${backend.slug}.<tool>(args)\` throws on failure and returns structuredContent when present; otherwise, nonempty all-text content whose blocks each parse as JSON objects with no shared keys returns their shallow merge (including a single JSON-object block). Invalid JSON, arrays/null/primitives, key collisions, or non-text blocks fall back to a string for exactly one text item, otherwise the unchanged content array. There is no \`.content\` wrapper. Plugins return their bare data.`,
 	];
 	if (pluginCallsSummary.length > 0) {
 		lines.splice(
@@ -180,6 +180,7 @@ function executionContent(result: ExecuteResult): ContentBlock[] {
 }
 
 export function createPaperExecuteServer<E extends Cause.YieldableError>(
+	backend: DesignBackend,
 	engine: ExecutionEngine<E>,
 	pluginInstructionsText: string,
 	pluginCallsSummary: string,
@@ -188,18 +189,18 @@ export function createPaperExecuteServer<E extends Cause.YieldableError>(
 	const server = new McpServer(
 		{ name: "paper-execute", version: "1.0.0" },
 		{
-			instructions: buildServerInstructions(pluginInstructionsText),
+			instructions: buildServerInstructions(pluginInstructionsText, backend),
 		},
 	);
 
 	server.registerTool(
 		"execute",
 		{
-			description: buildExecuteDescription(pluginCallsSummary),
+			description: buildExecuteDescription(backend, pluginCallsSummary),
 			inputSchema: { code: z.string().min(1) },
 		},
 		async (input) => {
-			const code = `${buildPaperExecutorPreamble(pluginPreambleSource)}\n${input.code}`;
+			const code = `${buildExecutorPreamble(backend.slug, pluginPreambleSource)}\n${input.code}`;
 			const result = (await Effect.runPromise(
 				engine.execute(code, {
 					onElicitation: () => Effect.succeed({ action: "accept" }),

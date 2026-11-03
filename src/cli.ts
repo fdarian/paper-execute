@@ -3,13 +3,17 @@
 import { BunRuntime, BunServices } from "@effect/platform-bun";
 import { Effect } from "effect";
 import { Argument, Command, Flag } from "effect/unstable/cli";
+import type { DesignBackend } from "#/backend";
+import { brilliantBackend } from "#/backend/brilliant";
+import { paperBackend } from "#/backend/paper";
 import { runDesignerClaude } from "#/designer/claude-code";
 import { serveStdio } from "#/mcp/stdio";
 import pkg from "../package.json" with { type: "json" };
 
-const mcp = Command.make("mcp", {}, () => serveStdio).pipe(
-	Command.withDescription("Run the Paper execute MCP server over stdio"),
-);
+const mcpCommand = (backend: DesignBackend) =>
+	Command.make("mcp", {}, () => serveStdio(backend)).pipe(
+		Command.withDescription(`Run the ${backend.name} execute MCP server over stdio`),
+	);
 
 // Effect CLI rejects unknown flags, so claude's own flags (other than -c / -r) must follow `--`.
 // Effect CLI has no optional-value flags, so `-r` is boolean and its session id arrives as the first positional.
@@ -40,7 +44,14 @@ const cc = Command.make(
 	),
 );
 
-const designer = Command.make("designer").pipe(Command.withSubcommands([mcp, cc]));
+const brilliant = Command.make("brilliant").pipe(
+	Command.withDescription("Run against Brilliant instead of Paper"),
+	Command.withSubcommands([mcpCommand(brilliantBackend)]),
+);
+
+const designer = Command.make("designer").pipe(
+	Command.withSubcommands([mcpCommand(paperBackend), cc, brilliant]),
+);
 
 // No top-level await: `--bytecode` compiles to CommonJS.
 Command.run(designer, { version: pkg.version }).pipe(

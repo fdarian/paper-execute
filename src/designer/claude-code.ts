@@ -4,6 +4,7 @@ import { dirname, join } from "node:path";
 
 import { Effect } from "effect";
 
+import { paperBackend } from "#/backend/paper";
 import { buildServerInstructions } from "#/mcp/instructions";
 import { bootPluginRegistry } from "#/plugin/boot";
 import type { InheritSettings } from "#/plugin/config";
@@ -99,7 +100,9 @@ export function runDesignerClaude(options: DesignerClaudeOptions) {
 			);
 		}
 		const booted = yield* bootPluginRegistry();
-		const agents = agentsConfig(buildServerInstructions(booted.registry.instructionsText));
+		const agents = agentsConfig(
+			buildServerInstructions(booted.registry.instructionsText, paperBackend),
+		);
 		const child = Bun.spawn(
 			[
 				claude,

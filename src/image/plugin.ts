@@ -32,7 +32,7 @@ export const imagePlugin = definePaperPlugin({
 	name: "image",
 	instructions:
 		// biome-ignore lint/suspicious/noTemplateCurlyInString: the example is code shown to the model
-		'When the user gives a local image file path (screenshot, photo, etc.) to put into Paper, use `plugins.image.get(path)`; never read the file yourself. It returns `{ src, width, height, mimeType }`: `src` is a data URI, width/height are intrinsic pixels (`~` expands). Embed with `<img src="${img.src}" style="width:${W}px;aspect-ratio:${img.width}/${img.height}" />` in `paper.write_html`; width plus aspect-ratio are required or Paper collapses the height to 0. The size can also size the artboard.',
+		'When the user gives a local image file path (screenshot, photo, etc.) to put into the design, use `plugins.image.get(path)`; never read the file yourself. It returns `{ src, width, height, mimeType }`: `src` is a data URI, width/height are intrinsic pixels (`~` expands). Embed with `<img src="${img.src}" style="width:${W}px;aspect-ratio:${img.width}/${img.height}" />` in the HTML you write; width plus aspect-ratio are required or the height can collapse to 0. The size can also size the artboard or frame.',
 	tools: {
 		get: {
 			input: ImageGetInput,
