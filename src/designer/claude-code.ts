@@ -14,7 +14,7 @@ import { buildSettings } from "./settings.ts";
 
 const assets = readDesignerAssets();
 
-function materializePluginDir(): string {
+export function materializePluginDir(): string {
 	const hash = Bun.hash(JSON.stringify(assets.pluginFiles)).toString(36);
 	const root = join(tmpdir(), "designer");
 	const target = join(root, `paper-refs-${hash}`);
@@ -40,27 +40,23 @@ function materializePluginDir(): string {
 	return target;
 }
 
-function mcpConfig(backend: DesignBackend): string {
+export function designerMcpServer(backend: DesignBackend) {
 	const compiled = Bun.main.startsWith("/$bunfs/");
 	const args = [...backend.cliPath, "mcp"];
-	return JSON.stringify({
-		mcpServers: {
-			[backend.slug]: {
-				type: "stdio",
-				command: process.execPath,
-				args: compiled ? args : [Bun.main, ...args],
-				alwaysLoad: true,
-			},
-		},
-	});
+	return {
+		type: "stdio",
+		command: process.execPath,
+		args: compiled ? args : [Bun.main, ...args],
+		alwaysLoad: true,
+	} as const;
 }
 
 // Agent prompts replace the system prompt and subagents don't receive MCP server instructions,
 // so both agents carry the server instructions themselves.
-function agentsConfig(backend: DesignBackend, serverInstructions: string): string {
+export function designerAgents(backend: DesignBackend, serverInstructions: string) {
 	const fill = (template: string) =>
 		template.replaceAll("{{name}}", backend.name).replaceAll("{{slug}}", backend.slug);
-	return JSON.stringify({
+	return {
 		director: {
 			description: `Directs design work in ${backend.name} through the designer subagent.`,
 			model: "opus",
@@ -71,22 +67,19 @@ function agentsConfig(backend: DesignBackend, serverInstructions: string): strin
 			model: "haiku",
 			prompt: `${fill(assets.agentPrompt)}\n\n${fill(assets.designerPrompt)}\n\n${serverInstructions}`,
 		},
-	});
+	} as const;
 }
 
-function settingsArgs(
+export function designerSettings(
 	inheritSettings: InheritSettings,
 	literalSettings: Record<string, unknown>,
-): string[] {
+): Record<string, unknown> {
 	const configDir = process.env.CLAUDE_CONFIG_DIR ?? join(homedir(), ".claude");
 	const path = join(configDir, "settings.json");
 	const userSettings: Record<string, unknown> = existsSync(path)
 		? JSON.parse(readFileSync(path, "utf8"))
 		: {};
-	return [
-		"--settings",
-		JSON.stringify(buildSettings(userSettings, inheritSettings, literalSettings)),
-	];
+	return buildSettings(userSettings, inheritSettings, literalSettings);
 }
 
 export interface DesignerClaudeOptions {
@@ -105,7 +98,7 @@ export function runDesignerClaude(options: DesignerClaudeOptions) {
 			);
 		}
 		const booted = yield* bootPluginRegistry();
-		const agents = agentsConfig(
+		const agents = designerAgents(
 			options.backend,
 			buildServerInstructions(booted.registry.instructionsText, options.backend),
 		);
@@ -114,16 +107,24 @@ export function runDesignerClaude(options: DesignerClaudeOptions) {
 				claude,
 				"--dangerously-skip-permissions",
 				"--mcp-config",
-				mcpConfig(options.backend),
+				JSON.stringify({
+					mcpServers: { [options.backend.slug]: designerMcpServer(options.backend) },
+				}),
 				// Without this, user-scope MCP servers (e.g. Brilliant's native tools) would load next to ours.
 				"--strict-mcp-config",
 				...(options.backend === paperBackend ? ["--plugin-dir", materializePluginDir()] : []),
 				// Scopes settings files only: ancestor-directory CLAUDE.md/rules (e.g. ~/.claude/CLAUDE.md) still load, so config `cc.settings.claudeMdExcludes` has to cover them.
 				"--setting-sources",
 				"project,local",
-				...settingsArgs(booted.config.cc?.inheritSettings ?? {}, booted.config.cc?.settings ?? {}),
+				"--settings",
+				JSON.stringify(
+					designerSettings(
+						booted.config.cc?.inheritSettings ?? {},
+						booted.config.cc?.settings ?? {},
+					),
+				),
 				"--agents",
-				agents,
+				JSON.stringify(agents),
 				"--agent",
 				"director",
 				...(options.continue ? ["--continue"] : []),

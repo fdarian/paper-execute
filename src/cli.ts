@@ -6,6 +6,7 @@ import { Argument, Command, Flag } from "effect/unstable/cli";
 import type { DesignBackend } from "#/backend";
 import { brilliantBackend } from "#/backend/brilliant";
 import { paperBackend } from "#/backend/paper";
+import { runDesignerAcp } from "#/designer/acp";
 import { runDesignerClaude } from "#/designer/claude-code";
 import { serveStdio } from "#/mcp/stdio";
 import pkg from "../package.json" with { type: "json" };
@@ -51,8 +52,14 @@ const brilliant = Command.make("brilliant").pipe(
 	Command.withSubcommands([mcpCommand(brilliantBackend), ccCommand(brilliantBackend)]),
 );
 
+const acp = Command.make("acp", {}, () =>
+	runDesignerAcp().pipe(Effect.flatMap(() => Effect.sync(() => process.exit(0)))),
+).pipe(
+	Command.withDescription("Run the designer agent as an ACP server over stdio (claude-agent-acp)"),
+);
+
 const designer = Command.make("designer").pipe(
-	Command.withSubcommands([mcpCommand(paperBackend), ccCommand(paperBackend), brilliant]),
+	Command.withSubcommands([mcpCommand(paperBackend), ccCommand(paperBackend), acp, brilliant]),
 );
 
 // No top-level await: `--bytecode` compiles to CommonJS.
