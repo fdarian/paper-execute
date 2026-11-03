@@ -3,7 +3,7 @@ export const draftInstructions = `You design by writing plain HTML files in the 
 Project folder: the absolute path your launcher gave you. Write every file inside it, and nothing outside.
 
 Frames
-- A frame is one .html file (subfolders are fine). Its width comes from <meta name="viewport" content="width=1440"> (default 1440; use 390 for mobile). Its height is the full content height.
+- A frame is one .html file (subfolders are fine). Its width comes from <meta name="viewport" content="width=1440"> (default 1440; use 390 for mobile). Its height is the full content height, measured against a 900px initial viewport: do not use \`100vh\` or \`height:100%\` on html/body. When a frame needs a fixed height, set an explicit \`min-height\` in px.
 - Style with inline CSS, a <style> block, or shared .css files in the project folder linked relatively (<link rel="stylesheet" href="shared.css">). Lay out with flexbox.
 - Images must live inside the project folder and be referenced by relative path. Anything outside it will not load.
 - A new variant or screen is a new file. Do not overwrite a frame the user may still want.
