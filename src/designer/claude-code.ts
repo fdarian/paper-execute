@@ -4,6 +4,7 @@ import { dirname, join } from "node:path";
 
 import { Effect } from "effect";
 
+import type { DesignBackend } from "#/backend";
 import { paperBackend } from "#/backend/paper";
 import { buildServerInstructions } from "#/mcp/instructions";
 import { bootPluginRegistry } from "#/plugin/boot";
@@ -39,14 +40,15 @@ function materializePluginDir(): string {
 	return target;
 }
 
-function mcpConfig(): string {
+function mcpConfig(backend: DesignBackend): string {
 	const compiled = Bun.main.startsWith("/$bunfs/");
+	const args = [...backend.cliPath, "mcp"];
 	return JSON.stringify({
 		mcpServers: {
-			paper: {
+			[backend.slug]: {
 				type: "stdio",
 				command: process.execPath,
-				args: compiled ? ["mcp"] : [Bun.main, "mcp"],
+				args: compiled ? args : [Bun.main, ...args],
 				alwaysLoad: true,
 			},
 		},
@@ -55,17 +57,19 @@ function mcpConfig(): string {
 
 // Agent prompts replace the system prompt and subagents don't receive MCP server instructions,
 // so both agents carry the server instructions themselves.
-function agentsConfig(serverInstructions: string): string {
+function agentsConfig(backend: DesignBackend, serverInstructions: string): string {
+	const fill = (template: string) =>
+		template.replaceAll("{{name}}", backend.name).replaceAll("{{slug}}", backend.slug);
 	return JSON.stringify({
 		director: {
-			description: "Directs design work in Paper through the designer subagent.",
+			description: `Directs design work in ${backend.name} through the designer subagent.`,
 			model: "opus",
-			prompt: `${assets.agentPrompt}\n\n${assets.directorPrompt}\n\n${serverInstructions}`,
+			prompt: `${fill(assets.agentPrompt)}\n\n${fill(assets.directorPrompt)}\n\n${serverInstructions}`,
 		},
 		designer: {
-			description: "Executes a design brief in Paper and reports back with a screenshot path.",
+			description: `Executes a design brief in ${backend.name} and reports back with a screenshot path.`,
 			model: "haiku",
-			prompt: `${assets.agentPrompt}\n\n${assets.designerPrompt}\n\n${serverInstructions}`,
+			prompt: `${fill(assets.agentPrompt)}\n\n${fill(assets.designerPrompt)}\n\n${serverInstructions}`,
 		},
 	});
 }
@@ -86,6 +90,7 @@ function settingsArgs(
 }
 
 export interface DesignerClaudeOptions {
+	readonly backend: DesignBackend;
 	readonly continue: boolean;
 	readonly resume: boolean;
 	readonly passthrough: readonly string[];
@@ -101,16 +106,18 @@ export function runDesignerClaude(options: DesignerClaudeOptions) {
 		}
 		const booted = yield* bootPluginRegistry();
 		const agents = agentsConfig(
-			buildServerInstructions(booted.registry.instructionsText, paperBackend),
+			options.backend,
+			buildServerInstructions(booted.registry.instructionsText, options.backend),
 		);
 		const child = Bun.spawn(
 			[
 				claude,
 				"--dangerously-skip-permissions",
 				"--mcp-config",
-				mcpConfig(),
-				"--plugin-dir",
-				materializePluginDir(),
+				mcpConfig(options.backend),
+				// Without this, user-scope MCP servers (e.g. Brilliant's native tools) would load next to ours.
+				"--strict-mcp-config",
+				...(options.backend === paperBackend ? ["--plugin-dir", materializePluginDir()] : []),
 				// Scopes settings files only: ancestor-directory CLAUDE.md/rules (e.g. ~/.claude/CLAUDE.md) still load, so config `cc.settings.claudeMdExcludes` has to cover them.
 				"--setting-sources",
 				"project,local",

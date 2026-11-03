@@ -17,40 +17,42 @@ const mcpCommand = (backend: DesignBackend) =>
 
 // Effect CLI rejects unknown flags, so claude's own flags (other than -c / -r) must follow `--`.
 // Effect CLI has no optional-value flags, so `-r` is boolean and its session id arrives as the first positional.
-const cc = Command.make(
-	"cc",
-	{
-		continue: Flag.Boolean("continue").pipe(
-			Flag.withAlias("c"),
-			Flag.withDefault(false),
-			Flag.withDescription("Continue the most recent conversation"),
+const ccCommand = (backend: DesignBackend) =>
+	Command.make(
+		"cc",
+		{
+			continue: Flag.Boolean("continue").pipe(
+				Flag.withAlias("c"),
+				Flag.withDefault(false),
+				Flag.withDescription("Continue the most recent conversation"),
+			),
+			resume: Flag.Boolean("resume").pipe(
+				Flag.withAlias("r"),
+				Flag.withDefault(false),
+				Flag.withDescription("Resume a conversation: `-r <id>`, or `-r` alone for the picker"),
+			),
+			args: Argument.String("args").pipe(Argument.variadic()),
+		},
+		(config) =>
+			runDesignerClaude({
+				backend,
+				continue: config.continue,
+				resume: config.resume,
+				passthrough: config.args,
+			}).pipe(Effect.flatMap((exitCode) => Effect.sync(() => process.exit(exitCode)))),
+	).pipe(
+		Command.withDescription(
+			"Launch Claude Code with the designer agent; pass other claude args after `--` (designer cc -- --verbose)",
 		),
-		resume: Flag.Boolean("resume").pipe(
-			Flag.withAlias("r"),
-			Flag.withDefault(false),
-			Flag.withDescription("Resume a conversation: `-r <id>`, or `-r` alone for the picker"),
-		),
-		args: Argument.String("args").pipe(Argument.variadic()),
-	},
-	(config) =>
-		runDesignerClaude({
-			continue: config.continue,
-			resume: config.resume,
-			passthrough: config.args,
-		}).pipe(Effect.flatMap((exitCode) => Effect.sync(() => process.exit(exitCode)))),
-).pipe(
-	Command.withDescription(
-		"Launch Claude Code with the designer agent; pass other claude args after `--` (designer cc -- --verbose)",
-	),
-);
+	);
 
 const brilliant = Command.make("brilliant").pipe(
 	Command.withDescription("Run against Brilliant instead of Paper"),
-	Command.withSubcommands([mcpCommand(brilliantBackend)]),
+	Command.withSubcommands([mcpCommand(brilliantBackend), ccCommand(brilliantBackend)]),
 );
 
 const designer = Command.make("designer").pipe(
-	Command.withSubcommands([mcpCommand(paperBackend), cc, brilliant]),
+	Command.withSubcommands([mcpCommand(paperBackend), ccCommand(paperBackend), brilliant]),
 );
 
 // No top-level await: `--bytecode` compiles to CommonJS.
