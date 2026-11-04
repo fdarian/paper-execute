@@ -15,7 +15,7 @@
 		"check:lint": "biome check .",
 		"format": "biome format --write .",
 		"build": "bun build --compile --bytecode --compile-autoload-package-json --compile-autoload-tsconfig src/cli.ts --outfile dist/cli/designer",
-		"start": "bun run src/cli.ts mcp"
+		"start": "bun run src/cli.ts paper mcp"
 	},
 	"dependencies": {
 		"@agentclientprotocol/claude-agent-acp": "0.93.0",
