@@ -52,16 +52,39 @@ const launchClaude = (
 	}).pipe(Effect.flatMap((exitCode) => Effect.sync(() => process.exit(exitCode))));
 
 const ccDescription =
-	"Launch Claude Code with the designer agent; pass other claude args after `--` (designer cc -- --verbose)";
+	"Launch Claude Code with the designer agent; pass other claude args after `--` (designer paper cc -- --verbose)";
 
 const ccCommand = (backend: DesignBackend) =>
 	Command.make("cc", ccFlags, (config) =>
 		launchClaude(config, (booted) => executorLaunch(backend, booted)),
 	).pipe(Command.withDescription(ccDescription));
 
+const acpDescription = "Run the designer agent as an ACP server over stdio (claude-agent-acp)";
+
+const runAcp = (buildLaunch: Parameters<typeof runDesignerAcp>[0]) =>
+	runDesignerAcp(buildLaunch).pipe(Effect.flatMap(() => Effect.sync(() => process.exit(0))));
+
+const acpCommand = (backend: DesignBackend) =>
+	Command.make("acp", {}, () => runAcp((booted) => executorLaunch(backend, booted))).pipe(
+		Command.withDescription(acpDescription),
+	);
+
+const paper = Command.make("paper").pipe(
+	Command.withDescription("Design in Paper"),
+	Command.withSubcommands([
+		mcpCommand(paperBackend),
+		ccCommand(paperBackend),
+		acpCommand(paperBackend),
+	]),
+);
+
 const brilliant = Command.make("brilliant").pipe(
-	Command.withDescription("Run against Brilliant instead of Paper"),
-	Command.withSubcommands([mcpCommand(brilliantBackend), ccCommand(brilliantBackend)]),
+	Command.withDescription("Design in Brilliant"),
+	Command.withSubcommands([
+		mcpCommand(brilliantBackend),
+		ccCommand(brilliantBackend),
+		acpCommand(brilliantBackend),
+	]),
 );
 
 const draftMcp = Command.make(
@@ -97,26 +120,22 @@ const draftCc = Command.make(
 	(config) => launchClaude(config, () => draftLaunch(Option.getOrUndefined(config.project))),
 ).pipe(Command.withDescription(ccDescription));
 
+const draftAcp = Command.make(
+	"acp",
+	{
+		project: Flag.optional(Flag.String("project")).pipe(
+			Flag.withDescription("Project name (default: git repo or folder name of the cwd)"),
+		),
+	},
+	(config) => runAcp(() => draftLaunch(Option.getOrUndefined(config.project))),
+).pipe(Command.withDescription(acpDescription));
+
 const draft = Command.make("draft").pipe(
 	Command.withDescription("Design with plain HTML files and a headless Chrome renderer"),
-	Command.withSubcommands([draftMcp, draftCc, draftView]),
+	Command.withSubcommands([draftMcp, draftCc, draftView, draftAcp]),
 );
 
-const acp = Command.make("acp", {}, () =>
-	runDesignerAcp().pipe(Effect.flatMap(() => Effect.sync(() => process.exit(0)))),
-).pipe(
-	Command.withDescription("Run the designer agent as an ACP server over stdio (claude-agent-acp)"),
-);
-
-const designer = Command.make("designer").pipe(
-	Command.withSubcommands([
-		mcpCommand(paperBackend),
-		ccCommand(paperBackend),
-		acp,
-		brilliant,
-		draft,
-	]),
-);
+const designer = Command.make("designer").pipe(Command.withSubcommands([paper, brilliant, draft]));
 
 // No top-level await: `--bytecode` compiles to CommonJS.
 Command.run(designer, { version: pkg.version }).pipe(

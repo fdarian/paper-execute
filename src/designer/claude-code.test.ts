@@ -74,7 +74,10 @@ test("paper launch keeps the plugin dir, executor MCP args, and unrestricted age
 
 	expect(valueAfter(args, "--plugin-dir")).toContain("paper-refs-");
 	expect(args).not.toContain("--add-dir");
-	expect(JSON.parse(valueAfter(args, "--mcp-config")).mcpServers.paper.args.at(-1)).toBe("mcp");
+	expect(JSON.parse(valueAfter(args, "--mcp-config")).mcpServers.paper.args.slice(-2)).toEqual([
+		"paper",
+		"mcp",
+	]);
 
 	const config = agents(launch);
 	expect(config.designer?.tools).toBeUndefined();
