@@ -1,71 +1,44 @@
-import { existsSync, mkdirSync, readFileSync, renameSync, rmSync, writeFileSync } from "node:fs";
-import { homedir, tmpdir } from "node:os";
-import { dirname, join } from "node:path";
+import { existsSync, readFileSync } from "node:fs";
+import { homedir } from "node:os";
+import { join } from "node:path";
 
 import { Effect } from "effect";
 
-import type { DesignBackend } from "#/backend";
-import { paperBackend } from "#/backend/paper";
-import { buildServerInstructions } from "#/mcp/instructions";
-import { bootPluginRegistry } from "#/plugin/boot";
+import { type BootedPlugins, bootPluginRegistry } from "#/plugin/boot";
 import type { InheritSettings } from "#/plugin/config";
-import { readDesignerAssets } from "./assets.ts" with { type: "macro" };
+import { designerAssets } from "./embedded.ts";
+import type { DesignerLaunch } from "./launch.ts";
 import { buildSettings } from "./settings.ts";
 
-const assets = readDesignerAssets();
-
-export function materializePluginDir(): string {
-	const hash = Bun.hash(JSON.stringify(assets.pluginFiles)).toString(36);
-	const root = join(tmpdir(), "designer");
-	const target = join(root, `paper-refs-${hash}`);
-	if (existsSync(target)) return target;
-
-	mkdirSync(root, { recursive: true });
-	const staging = join(root, `.staging-${process.pid}-${Date.now()}`);
-	try {
-		for (const [path, content] of Object.entries(assets.pluginFiles)) {
-			const file = join(staging, path);
-			mkdirSync(dirname(file), { recursive: true });
-			writeFileSync(file, content);
-		}
-		try {
-			renameSync(staging, target);
-		} catch (cause) {
-			// A concurrent launcher may have won the rename; its copy is identical.
-			if (!existsSync(target)) throw cause;
-		}
-	} finally {
-		rmSync(staging, { recursive: true, force: true });
-	}
-	return target;
-}
-
-export function designerMcpServer(backend: DesignBackend) {
+export function designerMcpServer(launch: DesignerLaunch) {
 	const compiled = Bun.main.startsWith("/$bunfs/");
-	const args = [...backend.cliPath, "mcp"];
 	return {
 		type: "stdio",
 		command: process.execPath,
-		args: compiled ? args : [Bun.main, ...args],
+		args: compiled ? [...launch.mcpArgs] : [Bun.main, ...launch.mcpArgs],
 		alwaysLoad: true,
 	} as const;
 }
 
 // Agent prompts replace the system prompt and subagents don't receive MCP server instructions,
 // so both agents carry the server instructions themselves.
-export function designerAgents(backend: DesignBackend, serverInstructions: string) {
+export function designerAgents(launch: DesignerLaunch) {
 	const fill = (template: string) =>
-		template.replaceAll("{{name}}", backend.name).replaceAll("{{slug}}", backend.slug);
+		template
+			.replaceAll("{{name}}", launch.name)
+			.replaceAll("{{slug}}", launch.slug)
+			.replaceAll("{{tools}}", launch.tools);
 	return {
 		director: {
-			description: `Directs design work in ${backend.name} through the designer subagent.`,
+			description: `Directs design work in ${launch.name} through the designer subagent.`,
 			model: "opus",
-			prompt: `${fill(assets.agentPrompt)}\n\n${fill(assets.directorPrompt)}\n\n${serverInstructions}`,
+			prompt: `${fill(designerAssets.agentPrompt)}\n\n${fill(designerAssets.directorPrompt)}\n\n${launch.instructions}`,
 		},
 		designer: {
-			description: `Executes a design brief in ${backend.name} and reports back with a screenshot path.`,
+			description: `Executes a design brief in ${launch.name} and reports back with a screenshot path.`,
 			model: "haiku",
-			prompt: `${fill(assets.agentPrompt)}\n\n${fill(assets.designerPrompt)}\n\n${serverInstructions}`,
+			prompt: `${fill(designerAssets.agentPrompt)}\n\n${fill(designerAssets.designerPrompt)}\n\n${launch.instructions}`,
+			...(launch.designerTools === undefined ? {} : { tools: [...launch.designerTools] }),
 		},
 	} as const;
 }
@@ -82,8 +55,42 @@ export function designerSettings(
 	return buildSettings(userSettings, inheritSettings, literalSettings);
 }
 
+export interface ClaudeArgsOptions {
+	readonly launch: DesignerLaunch;
+	readonly inheritSettings: InheritSettings;
+	readonly literalSettings: Record<string, unknown>;
+	readonly continue: boolean;
+	readonly resume: boolean;
+	readonly passthrough: readonly string[];
+}
+
+export function buildClaudeArgs(options: ClaudeArgsOptions): string[] {
+	return [
+		"--dangerously-skip-permissions",
+		"--mcp-config",
+		JSON.stringify({ mcpServers: { [options.launch.slug]: designerMcpServer(options.launch) } }),
+		// Without this, user-scope MCP servers (e.g. Brilliant's native tools) would load next to ours.
+		"--strict-mcp-config",
+		...options.launch.pluginDirs.flatMap((dir) => ["--plugin-dir", dir]),
+		...options.launch.addDirs.flatMap((dir) => ["--add-dir", dir]),
+		// Scopes settings files only: ancestor-directory CLAUDE.md/rules (e.g. ~/.claude/CLAUDE.md) still load, so config `cc.settings.claudeMdExcludes` has to cover them.
+		"--setting-sources",
+		"project,local",
+		"--settings",
+		JSON.stringify(designerSettings(options.inheritSettings, options.literalSettings)),
+		"--agents",
+		JSON.stringify(designerAgents(options.launch)),
+		"--agent",
+		"director",
+		...(options.continue ? ["--continue"] : []),
+		// Placed right before the passthrough so a leading positional (`designer cc -r <id>`) becomes the session id.
+		...(options.resume ? ["--resume"] : []),
+		...options.passthrough,
+	];
+}
+
 export interface DesignerClaudeOptions {
-	readonly backend: DesignBackend;
+	readonly buildLaunch: (booted: BootedPlugins) => DesignerLaunch;
 	readonly continue: boolean;
 	readonly resume: boolean;
 	readonly passthrough: readonly string[];
@@ -98,42 +105,19 @@ export function runDesignerClaude(options: DesignerClaudeOptions) {
 			);
 		}
 		const booted = yield* bootPluginRegistry();
-		const agents = designerAgents(
-			options.backend,
-			buildServerInstructions(booted.registry.instructionsText, options.backend),
-		);
-		const child = Bun.spawn(
-			[
-				claude,
-				"--dangerously-skip-permissions",
-				"--mcp-config",
-				JSON.stringify({
-					mcpServers: { [options.backend.slug]: designerMcpServer(options.backend) },
-				}),
-				// Without this, user-scope MCP servers (e.g. Brilliant's native tools) would load next to ours.
-				"--strict-mcp-config",
-				...(options.backend === paperBackend ? ["--plugin-dir", materializePluginDir()] : []),
-				// Scopes settings files only: ancestor-directory CLAUDE.md/rules (e.g. ~/.claude/CLAUDE.md) still load, so config `cc.settings.claudeMdExcludes` has to cover them.
-				"--setting-sources",
-				"project,local",
-				"--settings",
-				JSON.stringify(
-					designerSettings(
-						booted.config.cc?.inheritSettings ?? {},
-						booted.config.cc?.settings ?? {},
-					),
-				),
-				"--agents",
-				JSON.stringify(agents),
-				"--agent",
-				"director",
-				...(options.continue ? ["--continue"] : []),
-				// Placed right before the passthrough so a leading positional (`designer cc -r <id>`) becomes the session id.
-				...(options.resume ? ["--resume"] : []),
-				...options.passthrough,
-			],
-			{ stdin: "inherit", stdout: "inherit", stderr: "inherit" },
-		);
+		const args = buildClaudeArgs({
+			launch: options.buildLaunch(booted),
+			inheritSettings: booted.config.cc?.inheritSettings ?? {},
+			literalSettings: booted.config.cc?.settings ?? {},
+			continue: options.continue,
+			resume: options.resume,
+			passthrough: options.passthrough,
+		});
+		const child = Bun.spawn([claude, ...args], {
+			stdin: "inherit",
+			stdout: "inherit",
+			stderr: "inherit",
+		});
 		return yield* Effect.promise(() => child.exited);
 	});
 }

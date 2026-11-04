@@ -1,15 +1,10 @@
 import { runAcp } from "@agentclientprotocol/claude-agent-acp";
 import { Effect } from "effect";
 
+import { executorLaunch } from "#/backend/launch";
 import { paperBackend } from "#/backend/paper";
-import { buildServerInstructions } from "#/mcp/instructions";
 import { bootPluginRegistry } from "#/plugin/boot";
-import {
-	designerAgents,
-	designerMcpServer,
-	designerSettings,
-	materializePluginDir,
-} from "./claude-code.ts";
+import { designerAgents, designerMcpServer, designerSettings } from "./claude-code.ts";
 
 type SessionOptions = NonNullable<NonNullable<Parameters<typeof runAcp>[1]>["sessionOptions"]>;
 
@@ -39,11 +34,9 @@ export function runDesignerAcp() {
 		const booted = yield* bootPluginRegistry();
 
 		// Computed once: the adapter calls the hook for every new/load/resume/fork and expects the same options each time.
-		const agents = designerAgents(
-			paperBackend,
-			buildServerInstructions(booted.registry.instructionsText, paperBackend),
-		);
-		const plugins = [{ type: "local", path: materializePluginDir() }] as const;
+		const launch = executorLaunch(paperBackend, booted);
+		const agents = designerAgents(launch);
+		const plugins = launch.pluginDirs.map((path) => ({ type: "local", path }) as const);
 		const settings = {
 			...designerSettings(
 				booted.config.cc?.inheritSettings ?? {},
@@ -51,16 +44,16 @@ export function runDesignerAcp() {
 			),
 			model: designerModel,
 		};
-		const paper = designerMcpServer(paperBackend);
+		const designerServer = designerMcpServer(launch);
 		const sessionOptions: SessionOptions = (provided) => ({
 			...provided,
 			agents,
 			agent: "director",
-			plugins: [...plugins],
+			plugins,
 			// Only scopes settings files: ancestor-directory CLAUDE.md/rules still load, see `cc.settings.claudeMdExcludes`.
 			settingSources: ["project", "local"],
 			settings,
-			mcpServers: { ...provided?.mcpServers, paper },
+			mcpServers: { ...provided?.mcpServers, [launch.slug]: designerServer },
 		});
 
 		const acp = runAcp({ log: console.error, error: console.error }, { sessionOptions });
