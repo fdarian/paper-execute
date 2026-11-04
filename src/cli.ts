@@ -51,13 +51,13 @@ const launchClaude = (
 		passthrough: config.args,
 	}).pipe(Effect.flatMap((exitCode) => Effect.sync(() => process.exit(exitCode))));
 
-const ccDescription =
-	"Launch Claude Code with the designer agent; pass other claude args after `--` (designer paper cc -- --verbose)";
+const ccDescription = (group: string) =>
+	`Launch Claude Code with the designer agent; pass other claude args after \`--\` (designer ${group} cc -- --verbose)`;
 
 const ccCommand = (backend: DesignBackend) =>
 	Command.make("cc", ccFlags, (config) =>
 		launchClaude(config, (booted) => executorLaunch(backend, booted)),
-	).pipe(Command.withDescription(ccDescription));
+	).pipe(Command.withDescription(ccDescription(backend.cliPath.join(" "))));
 
 const acpDescription = "Run the designer agent as an ACP server over stdio (claude-agent-acp)";
 
@@ -118,7 +118,7 @@ const draftCc = Command.make(
 		),
 	},
 	(config) => launchClaude(config, () => draftLaunch(Option.getOrUndefined(config.project))),
-).pipe(Command.withDescription(ccDescription));
+).pipe(Command.withDescription(ccDescription("draft")));
 
 const draftAcp = Command.make(
 	"acp",
