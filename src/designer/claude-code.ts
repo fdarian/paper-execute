@@ -37,6 +37,8 @@ export function designerAgents(launch: DesignerLaunch) {
 		designer: {
 			description: `Executes a design brief in ${launch.name} and reports back with a screenshot path.`,
 			model: "haiku",
+			// The minimum the CLI accepts; keeps a long-lived designer's context small.
+			autoCompactWindow: 100_000,
 			prompt: `${fill(designerAssets.agentPrompt)}\n\n${fill(designerAssets.designerPrompt)}\n\n${launch.instructions}`,
 			...(launch.designerTools === undefined ? {} : { tools: [...launch.designerTools] }),
 		},
