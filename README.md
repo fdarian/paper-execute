@@ -134,6 +134,6 @@ bun run src/cli.ts paper mcp
 `bun run build` compiles `dist/cli/designer` (`bin: designer`):
 
 - `designer paper mcp` runs the stdio MCP server.
-- `designer paper cc [-- ...args]` launches Claude Code with the designer agent, the Paper MCP server, and the `paper-refs` plugin; args after `--` pass through to `claude` (e.g. `designer paper cc -- --resume`).
+- `designer paper cc [-- ...args]` launches Claude Code with the designer agent, the Paper MCP server, and the `paper-refs` plugin; args after `--` pass through to `claude` (e.g. `designer paper cc -- --resume`). `--cache-ttl <5m|1h>` (on every `cc` and `acp`) sets Claude Code's prompt cache TTL for both the director and the designer subagent; omit it to keep Claude Code's automatic default.
 - `designer paper acp` runs the designer agent as an ACP server over stdio.
 - `designer brilliant mcp|cc|acp` and `designer draft mcp|cc|acp|view` offer the same against Brilliant and Draft.

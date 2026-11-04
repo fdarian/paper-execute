@@ -4,12 +4,18 @@ import { Effect } from "effect";
 import { type BootedPlugins, bootPluginRegistry } from "#/plugin/boot";
 import { designerAgents, designerMcpServer, designerSettings } from "./claude-code.ts";
 import type { DesignerLaunch } from "./launch.ts";
+import type { CacheTtl } from "./settings.ts";
 
 type SessionOptions = NonNullable<NonNullable<Parameters<typeof runAcp>[1]>["sessionOptions"]>;
 
 const designerModel = "opus";
 
-export function runDesignerAcp(buildLaunch: (booted: BootedPlugins) => DesignerLaunch) {
+export type DesignerAcpOptions = {
+	readonly buildLaunch: (booted: BootedPlugins) => DesignerLaunch;
+	readonly cacheTtl: CacheTtl | undefined;
+};
+
+export function runDesignerAcp(options: DesignerAcpOptions) {
 	return Effect.gen(function* () {
 		// stdout carries the JSON-RPC stream, so nothing else may write to it.
 		console.log = console.error;
@@ -33,13 +39,14 @@ export function runDesignerAcp(buildLaunch: (booted: BootedPlugins) => DesignerL
 		const booted = yield* bootPluginRegistry();
 
 		// Computed once: the adapter calls the hook for every new/load/resume/fork and expects the same options each time.
-		const launch = buildLaunch(booted);
+		const launch = options.buildLaunch(booted);
 		const agents = designerAgents(launch);
 		const plugins = launch.pluginDirs.map((path) => ({ type: "local", path }) as const);
 		const settings = {
 			...designerSettings(
 				booted.config.cc?.inheritSettings ?? {},
 				booted.config.cc?.settings ?? {},
+				options.cacheTtl,
 			),
 			model: designerModel,
 		};

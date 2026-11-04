@@ -5,7 +5,7 @@ import { buildSettings } from "./settings.ts";
 const designer = { "frontend-design@claude-plugins-official": true };
 
 test("always enables the designer plugin, even with no user settings", () => {
-	expect(buildSettings({}, {}, {})).toEqual({ enabledPlugins: designer });
+	expect(buildSettings({}, {}, {}, undefined)).toEqual({ enabledPlugins: designer });
 });
 
 test("carries the UI keys and ignores other user keys", () => {
@@ -13,6 +13,7 @@ test("carries the UI keys and ignores other user keys", () => {
 		{ theme: "dark", model: "x", statusLine: { type: "command" } },
 		{},
 		{},
+		undefined,
 	);
 	expect(settings).toEqual({
 		theme: "dark",
@@ -34,6 +35,7 @@ test("inherits whole values and picked sub-keys, skipping missing ones", () => {
 			enabledPlugins: ["nope"],
 		},
 		{},
+		undefined,
 	);
 	expect(settings).toEqual({
 		model: "opus",
@@ -53,12 +55,13 @@ test("merges inherited enabledPlugins with the designer's, which win on conflict
 		},
 		{ enabledPlugins: ["skill-mention@dotfiles", "frontend-design@claude-plugins-official"] },
 		{},
+		undefined,
 	);
 	expect(settings.enabledPlugins).toEqual({ "skill-mention@dotfiles": true, ...designer });
 });
 
 test("throws when sub-keys are listed for a non-object value", () => {
-	expect(() => buildSettings({ model: "opus" }, { model: ["a"] }, {})).toThrow();
+	expect(() => buildSettings({ model: "opus" }, { model: ["a"] }, {}, undefined)).toThrow();
 });
 
 test("cc.settings shallow-merges over inherited settings", () => {
@@ -66,6 +69,7 @@ test("cc.settings shallow-merges over inherited settings", () => {
 		{ theme: "dark", model: "opus" },
 		{ model: true },
 		{ model: "haiku", claudeMdExcludes: ["/x/**"] },
+		undefined,
 	);
 	expect(settings).toEqual({
 		theme: "dark",
@@ -86,6 +90,7 @@ test("enabledPlugins combines inherited, cc.settings and designer entries; desig
 				"frontend-design@claude-plugins-official": false,
 			},
 		},
+		undefined,
 	);
 	expect(settings.enabledPlugins).toEqual({
 		"a@x": true,
@@ -93,4 +98,32 @@ test("enabledPlugins combines inherited, cc.settings and designer entries; desig
 		"c@x": true,
 		...designer,
 	});
+});
+
+test("cache TTL absent leaves both TTL keys unset", () => {
+	const settings = buildSettings({}, {}, {}, undefined);
+	expect(settings).not.toHaveProperty("promptCacheTtl");
+	expect(settings).not.toHaveProperty("subagentPromptCacheTtl");
+});
+
+test("cache TTL sets both main and subagent keys", () => {
+	const settings = buildSettings({}, {}, {}, "5m");
+	expect(settings.promptCacheTtl).toBe("5m");
+	expect(settings.subagentPromptCacheTtl).toBe("5m");
+});
+
+test("cache TTL flag overrides cc.settings", () => {
+	const settings = buildSettings(
+		{},
+		{},
+		{ promptCacheTtl: "5m", subagentPromptCacheTtl: "5m" },
+		"1h",
+	);
+	expect(settings.promptCacheTtl).toBe("1h");
+	expect(settings.subagentPromptCacheTtl).toBe("1h");
+});
+
+test("cc.settings TTL is kept when the flag is absent", () => {
+	const settings = buildSettings({}, {}, { promptCacheTtl: "5m" }, undefined);
+	expect(settings.promptCacheTtl).toBe("5m");
 });

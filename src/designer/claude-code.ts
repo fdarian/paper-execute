@@ -8,7 +8,7 @@ import { type BootedPlugins, bootPluginRegistry } from "#/plugin/boot";
 import type { InheritSettings } from "#/plugin/config";
 import { designerAssets } from "./embedded.ts";
 import type { DesignerLaunch } from "./launch.ts";
-import { buildSettings } from "./settings.ts";
+import { buildSettings, type CacheTtl } from "./settings.ts";
 
 export function designerMcpServer(launch: DesignerLaunch) {
 	const compiled = Bun.main.startsWith("/$bunfs/");
@@ -46,19 +46,21 @@ export function designerAgents(launch: DesignerLaunch) {
 export function designerSettings(
 	inheritSettings: InheritSettings,
 	literalSettings: Record<string, unknown>,
+	cacheTtl: CacheTtl | undefined,
 ): Record<string, unknown> {
 	const configDir = process.env.CLAUDE_CONFIG_DIR ?? join(homedir(), ".claude");
 	const path = join(configDir, "settings.json");
 	const userSettings: Record<string, unknown> = existsSync(path)
 		? JSON.parse(readFileSync(path, "utf8"))
 		: {};
-	return buildSettings(userSettings, inheritSettings, literalSettings);
+	return buildSettings(userSettings, inheritSettings, literalSettings, cacheTtl);
 }
 
 export interface ClaudeArgsOptions {
 	readonly launch: DesignerLaunch;
 	readonly inheritSettings: InheritSettings;
 	readonly literalSettings: Record<string, unknown>;
+	readonly cacheTtl: CacheTtl | undefined;
 	readonly continue: boolean;
 	readonly resume: boolean;
 	readonly passthrough: readonly string[];
@@ -77,7 +79,9 @@ export function buildClaudeArgs(options: ClaudeArgsOptions): string[] {
 		"--setting-sources",
 		"project,local",
 		"--settings",
-		JSON.stringify(designerSettings(options.inheritSettings, options.literalSettings)),
+		JSON.stringify(
+			designerSettings(options.inheritSettings, options.literalSettings, options.cacheTtl),
+		),
 		"--agents",
 		JSON.stringify(designerAgents(options.launch)),
 		"--agent",
@@ -94,6 +98,7 @@ export interface DesignerClaudeOptions {
 	readonly continue: boolean;
 	readonly resume: boolean;
 	readonly passthrough: readonly string[];
+	readonly cacheTtl: CacheTtl | undefined;
 }
 
 export function runDesignerClaude(options: DesignerClaudeOptions) {
@@ -109,6 +114,7 @@ export function runDesignerClaude(options: DesignerClaudeOptions) {
 			launch: options.buildLaunch(booted),
 			inheritSettings: booted.config.cc?.inheritSettings ?? {},
 			literalSettings: booted.config.cc?.settings ?? {},
+			cacheTtl: options.cacheTtl,
 			continue: options.continue,
 			resume: options.resume,
 			passthrough: options.passthrough,

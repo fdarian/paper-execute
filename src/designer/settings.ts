@@ -8,6 +8,8 @@ const alwaysInherited: InheritSettings = {
 	outputStyle: true,
 };
 
+export type CacheTtl = "5m" | "1h";
+
 const designerPlugins = { "frontend-design@claude-plugins-official": true };
 
 function isObject(value: unknown): value is Record<string, unknown> {
@@ -18,6 +20,7 @@ export function buildSettings(
 	userSettings: Record<string, unknown>,
 	inheritSettings: InheritSettings,
 	literalSettings: Record<string, unknown>,
+	cacheTtl: CacheTtl | undefined,
 ): Record<string, unknown> {
 	const inherited: Record<string, unknown> = {};
 	for (const [key, spec] of Object.entries({ ...alwaysInherited, ...inheritSettings })) {
@@ -41,6 +44,10 @@ export function buildSettings(
 	return {
 		...inherited,
 		...literalSettings,
+		// `promptCacheTtl` covers the main thread (director), `subagentPromptCacheTtl` the subagents (designer).
+		...(cacheTtl === undefined
+			? {}
+			: { promptCacheTtl: cacheTtl, subagentPromptCacheTtl: cacheTtl }),
 		enabledPlugins: Object.assign({}, ...pluginsSources.filter(isObject), designerPlugins),
 	};
 }

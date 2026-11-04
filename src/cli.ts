@@ -7,8 +7,9 @@ import type { DesignBackend } from "#/backend";
 import { brilliantBackend } from "#/backend/brilliant";
 import { executorLaunch } from "#/backend/launch";
 import { paperBackend } from "#/backend/paper";
-import { runDesignerAcp } from "#/designer/acp";
+import { type DesignerAcpOptions, runDesignerAcp } from "#/designer/acp";
 import { type DesignerClaudeOptions, runDesignerClaude } from "#/designer/claude-code";
+import type { CacheTtl } from "#/designer/settings";
 import { draftLaunch } from "#/draft/launch";
 import { serveDraftStdio } from "#/draft/mcp";
 import { serveDraftView } from "#/draft/view";
@@ -19,6 +20,12 @@ const mcpCommand = (backend: DesignBackend) =>
 	Command.make("mcp", {}, () => serveStdio(backend)).pipe(
 		Command.withDescription(`Run the ${backend.name} execute MCP server over stdio`),
 	);
+
+const cacheTtlFlag = Flag.optional(Flag.Literals("cache-ttl", ["5m", "1h"])).pipe(
+	Flag.withDescription(
+		"Prompt cache TTL for director and designer (5m or 1h); e.g. 5m when designer is driven by another agent. Default: Claude Code's automatic choice",
+	),
+);
 
 // Effect CLI rejects unknown flags, so claude's own flags (other than -c / -r) must follow `--`.
 // Effect CLI has no optional-value flags, so `-r` is boolean and its session id arrives as the first positional.
@@ -34,6 +41,7 @@ const ccFlags = {
 		Flag.withDescription("Resume a conversation: `-r <id>`, or `-r` alone for the picker"),
 	),
 	args: Argument.String("args").pipe(Argument.variadic()),
+	cacheTtl: cacheTtlFlag,
 };
 
 const launchClaude = (
@@ -41,6 +49,7 @@ const launchClaude = (
 		readonly continue: boolean;
 		readonly resume: boolean;
 		readonly args: readonly string[];
+		readonly cacheTtl: Option.Option<CacheTtl>;
 	},
 	buildLaunch: DesignerClaudeOptions["buildLaunch"],
 ) =>
@@ -49,6 +58,7 @@ const launchClaude = (
 		continue: config.continue,
 		resume: config.resume,
 		passthrough: config.args,
+		cacheTtl: Option.getOrUndefined(config.cacheTtl),
 	}).pipe(Effect.flatMap((exitCode) => Effect.sync(() => process.exit(exitCode))));
 
 const ccDescription = (group: string) =>
@@ -61,13 +71,18 @@ const ccCommand = (backend: DesignBackend) =>
 
 const acpDescription = "Run the designer agent as an ACP server over stdio (claude-agent-acp)";
 
-const runAcp = (buildLaunch: Parameters<typeof runDesignerAcp>[0]) =>
-	runDesignerAcp(buildLaunch).pipe(Effect.flatMap(() => Effect.sync(() => process.exit(0))));
+const runAcp = (
+	config: { readonly cacheTtl: Option.Option<CacheTtl> },
+	buildLaunch: DesignerAcpOptions["buildLaunch"],
+) =>
+	runDesignerAcp({ buildLaunch, cacheTtl: Option.getOrUndefined(config.cacheTtl) }).pipe(
+		Effect.flatMap(() => Effect.sync(() => process.exit(0))),
+	);
 
 const acpCommand = (backend: DesignBackend) =>
-	Command.make("acp", {}, () => runAcp((booted) => executorLaunch(backend, booted))).pipe(
-		Command.withDescription(acpDescription),
-	);
+	Command.make("acp", { cacheTtl: cacheTtlFlag }, (config) =>
+		runAcp(config, (booted) => executorLaunch(backend, booted)),
+	).pipe(Command.withDescription(acpDescription));
 
 const paper = Command.make("paper").pipe(
 	Command.withDescription("Design in Paper"),
@@ -123,11 +138,12 @@ const draftCc = Command.make(
 const draftAcp = Command.make(
 	"acp",
 	{
+		cacheTtl: cacheTtlFlag,
 		project: Flag.optional(Flag.String("project")).pipe(
 			Flag.withDescription("Project name (default: git repo or folder name of the cwd)"),
 		),
 	},
-	(config) => runAcp(() => draftLaunch(Option.getOrUndefined(config.project))),
+	(config) => runAcp(config, () => draftLaunch(Option.getOrUndefined(config.project))),
 ).pipe(Command.withDescription(acpDescription));
 
 const draft = Command.make("draft").pipe(

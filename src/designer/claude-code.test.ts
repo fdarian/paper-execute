@@ -12,6 +12,7 @@ import type { DesignerLaunch } from "./launch.ts";
 const base = {
 	inheritSettings: {},
 	literalSettings: {},
+	cacheTtl: undefined,
 	continue: false,
 	resume: false,
 	passthrough: [],
@@ -95,4 +96,13 @@ test("-c and -r land right before the passthrough", () => {
 		passthrough: ["abc", "--verbose"],
 	});
 	expect(args.slice(-4)).toEqual(["--continue", "--resume", "abc", "--verbose"]);
+});
+
+test("--cache-ttl lands in the --settings JSON", () => {
+	const launch = executorLaunch(paperBackend, emptyBoot);
+	const settings = JSON.parse(
+		valueAfter(buildClaudeArgs({ ...base, launch, cacheTtl: "5m" }), "--settings"),
+	) as Record<string, unknown>;
+	expect(settings.promptCacheTtl).toBe("5m");
+	expect(settings.subagentPromptCacheTtl).toBe("5m");
 });
