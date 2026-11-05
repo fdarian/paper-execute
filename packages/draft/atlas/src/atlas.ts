@@ -102,7 +102,7 @@ function openReadonly(file: string): Database {
 	if (version !== schemaVersion) {
 		db.close();
 		throw new AtlasInvalid({
-			reason: `Atlas schema is at version ${version}, expected ${schemaVersion}; run a read-write command to migrate it`,
+			reason: `Atlas schema is at version ${version}, expected ${schemaVersion}; run any write command (or "draft atlas init") once to migrate it`,
 		});
 	}
 	return db;

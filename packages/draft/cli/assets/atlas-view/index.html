@@ -9,7 +9,7 @@
   :root {
     --bg: #fafaf8; --panel: #ffffff; --line: #e4e2dc; --text: #1d1d1b; --muted: #6b6a64;
     --accent: #2f5fd0; --accent-soft: #e8eefc; --hover: #f1f0ec; --sel: #e8eefc;
-    --built: #1f7a46; --built-bg: #e3f4ea; --planned: #9a5b00; --planned-bg: #fdf0d9;
+    --built: #1f7a46;
     --seeded: #6b6a64; --seeded-bg: #eceae4; --verified: #1f5fa8; --verified-bg: #e1edfb;
     --stale: #b3261e;
     --c-feature: #2f5fd0; --c-alias: #b8860b; --c-code: #1f7a46; --c-doc: #8a4fbf;
@@ -20,7 +20,7 @@
     :root {
       --bg: #151515; --panel: #1d1d1c; --line: #33322f; --text: #e8e6e0; --muted: #9a988f;
       --accent: #8fb0ff; --accent-soft: #232c45; --hover: #262624; --sel: #232c45;
-      --built: #6fd19a; --built-bg: #173323; --planned: #f0b45a; --planned-bg: #3a2b10;
+      --built: #6fd19a;
       --seeded: #a8a69c; --seeded-bg: #2a2a28; --verified: #8fc0ff; --verified-bg: #17293f;
       --stale: #ff8a80;
       --c-feature: #8fb0ff; --c-alias: #e6c15a; --c-code: #6fd19a; --c-doc: #c9a0f0;
@@ -67,8 +67,6 @@
   .row .codecount { color: var(--muted); font-size: 11.5px; font-family: var(--mono); flex: none; }
 
   .badge { font-size: 10.5px; padding: 1px 6px; border-radius: 999px; flex: none; line-height: 1.5; letter-spacing: .02em; }
-  .badge.built { color: var(--built); background: var(--built-bg); }
-  .badge.planned { color: var(--planned); background: var(--planned-bg); }
   .badge.seeded { color: var(--seeded); background: var(--seeded-bg); }
   .badge.verified { color: var(--verified); background: var(--verified-bg); }
 
@@ -249,7 +247,6 @@
   }
 
   // ---------- badges ----------
-  const statusBadge = (f) => f.status ? h("span", { class: "badge " + f.status }, f.status) : null;
   const confBadge = (f) => f.confidence ? h("span", { class: "badge " + f.confidence }, f.confidence === "verified" ? "verified ✓" : f.confidence) : null;
 
   // ---------- tree ----------
@@ -320,7 +317,7 @@
         m && m.kind === "alias" ? h("span", { class: "via" }, "alias: " + m.term) : null,
         m && m.kind === "summary" ? h("span", { class: "via" }, "in summary") : null,
         h("span", { class: "spacer" }),
-        statusBadge(f), confBadge(f),
+        confBadge(f),
         h("span", { class: "codecount", title: "code pointers" }, "{" + f.code.length + "}")
       );
       tree.appendChild(row);
@@ -367,7 +364,7 @@
       target.appendChild(crumbs);
     }
     target.appendChild(h("h2", null, f.name));
-    target.appendChild(h("div", { class: "badges" }, statusBadge(f), confBadge(f)));
+    target.appendChild(h("div", { class: "badges" }, confBadge(f)));
     target.appendChild(f.summary ? h("p", { class: "summary" }, f.summary) : h("p", { class: "summary none" }, "No summary."));
     target.appendChild(h("div", { class: "stamps" }, "seen at " + sha7(f.seenAt)));
 
@@ -386,12 +383,12 @@
 
     const kids = model.childrenOf(f);
     target.appendChild(block("Children (" + kids.length + ")", kids.length
-      ? h("ul", { class: "plain" }, ...kids.map((c) => h("li", null, featLink(c), statusBadge(c), c.summary ? h("span", { class: "sub" }, c.summary) : null)))
+      ? h("ul", { class: "plain" }, ...kids.map((c) => h("li", null, featLink(c), c.summary ? h("span", { class: "sub" }, c.summary) : null)))
       : none("No children.")));
 
     const rel = model.relatedOf(f);
     target.appendChild(block("Related (" + rel.length + ")", rel.length
-      ? h("ul", { class: "plain" }, ...rel.map((r) => h("li", null, featLink(r.feature), statusBadge(r.feature), r.feature.summary ? h("span", { class: "sub" }, r.feature.summary) : null, h("div", { class: "note" }, r.note))))
+      ? h("ul", { class: "plain" }, ...rel.map((r) => h("li", null, featLink(r.feature), r.feature.summary ? h("span", { class: "sub" }, r.feature.summary) : null, h("div", { class: "note" }, r.note))))
       : none("Nothing related.")));
   }
 

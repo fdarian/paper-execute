@@ -11,6 +11,11 @@ export function designerTeam(launch: DesignerLaunch): AgentTeam {
 			.replaceAll("{{name}}", launch.name)
 			.replaceAll("{{slug}}", launch.slug)
 			.replaceAll("{{tools}}", launch.tools);
+	const collision = Object.keys(launch.agents).find(
+		(name) => name === "director" || name === "designer",
+	);
+	if (collision !== undefined)
+		throw new Error(`Launch agent "${collision}" collides with a built-in agent`);
 	return {
 		agents: {
 			director: {
@@ -26,12 +31,13 @@ export function designerTeam(launch: DesignerLaunch): AgentTeam {
 				prompt: `${fill(designerAssets.agentPrompt)}\n\n${fill(designerAssets.designerPrompt)}\n\n${launch.instructions}`,
 				...(launch.designerTools === undefined ? {} : { tools: [...launch.designerTools] }),
 			},
+			...launch.agents,
 		},
 		main: "director",
 		mcpServers: { [launch.slug]: selfMcpServer(launch.mcpArgs) },
 		pluginDirs: launch.pluginDirs,
 		addDirs: launch.addDirs,
 		enabledPlugins: { "frontend-design@claude-plugins-official": true },
-		env: {},
+		env: launch.env,
 	};
 }

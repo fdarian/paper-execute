@@ -2,13 +2,12 @@ import { join } from "node:path";
 import { Effect } from "effect";
 
 import { Atlas, read } from "./atlas.ts";
-import type { AliasSource, FeatureStatus } from "./product.ts";
+import type { AliasSource } from "./product.ts";
 import { all } from "./sqlite.ts";
 
 export type ExportedFeature = {
 	readonly name: string;
 	readonly summary: string;
-	readonly status: FeatureStatus;
 	readonly confidence: "seeded" | "verified";
 	readonly seenAt: string;
 	readonly parent: string | null;
@@ -32,7 +31,6 @@ type FeatureRow = {
 	readonly id: number;
 	readonly name: string;
 	readonly summary: string;
-	readonly status: FeatureStatus;
 	readonly confidence: "seeded" | "verified";
 	readonly seen_at: string;
 	readonly parent: string | null;
@@ -60,7 +58,7 @@ export function exportAtlas() {
 			const db = handle.db;
 			const features = all<FeatureRow>(
 				db,
-				`SELECT feature.id, feature.name, feature.summary, feature.status, feature.confidence,
+				`SELECT feature.id, feature.name, feature.summary, feature.confidence,
 					feature.seen_at, parent.name AS parent
 				FROM feature LEFT JOIN feature parent ON parent.id = feature.parent_id
 				ORDER BY feature.name`,
@@ -103,7 +101,6 @@ export function exportAtlas() {
 				features: features.map((row) => ({
 					name: row.name,
 					summary: row.summary,
-					status: row.status,
 					confidence: row.confidence,
 					seenAt: row.seen_at,
 					parent: row.parent,

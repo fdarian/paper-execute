@@ -586,3 +586,255 @@ exports[`draft cc: ACP session options 1`] = `
   },
 }
 `;
+
+exports[`draft cc with atlas: claude argv 1`] = `
+[
+  "--dangerously-skip-permissions",
+  "--mcp-config",
+  {
+    "mcpServers": {
+      "draft": {
+        "alwaysLoad": true,
+        "args": [
+          "<main>",
+          "draft",
+          "mcp",
+          "--dir",
+          "<draft-root>/projects/with-atlas",
+        ],
+        "command": "<exec>",
+        "type": "stdio",
+      },
+    },
+  },
+  "--strict-mcp-config",
+  "--add-dir",
+  "<draft-root>/projects/with-atlas",
+  "--add-dir",
+  "<repo>",
+  "--setting-sources",
+  "project,local",
+  "--settings",
+  {
+    "claudeMdExcludes": [
+      "/x/**",
+    ],
+    "editorMode": "vim",
+    "enabledPlugins": {
+      "frontend-design@claude-plugins-official": true,
+      "skill-mention@dotfiles": true,
+    },
+    "extraKnownMarketplaces": {
+      "dotfiles": {
+        "source": "x",
+      },
+    },
+    "promptCacheTtl": "5m",
+    "subagentPromptCacheTtl": "5m",
+    "theme": "dark",
+  },
+  "--agents",
+  {
+    "cartographer": {
+      "description": "Answers questions about the product from the atlas and fixes atlas entries that the user or a designer found wrong or missing.",
+      "model": "sonnet",
+      "prompt": "sha256:37be1e5337db78cb length:3515",
+      "tools": [
+        "Bash",
+        "Read",
+        "Grep",
+        "Glob",
+      ],
+    },
+    "designer": {
+      "autoCompactWindow": 100000,
+      "description": "Executes a design brief in Draft and reports back with a screenshot path.",
+      "model": "haiku",
+      "prompt": "sha256:e91440fb8905c5f5 length:3237",
+      "tools": [
+        "Read",
+        "Write",
+        "Edit",
+        "Glob",
+        "Grep",
+        "mcp__draft__render",
+      ],
+    },
+    "director": {
+      "description": "Directs design work in Draft through the designer subagent.",
+      "model": "opus",
+      "prompt": "sha256:4091ad983497753e length:5223",
+    },
+  },
+  "--agent",
+  "director",
+  "--continue",
+  "--resume",
+  "abc",
+  "--verbose",
+]
+`;
+
+exports[`draft cc with atlas: ACP session options 1`] = `
+{
+  "fresh": {
+    "additionalDirectories": [
+      "<draft-root>/projects/with-atlas",
+      "<repo>",
+    ],
+    "agent": "director",
+    "agents": {
+      "cartographer": {
+        "description": "Answers questions about the product from the atlas and fixes atlas entries that the user or a designer found wrong or missing.",
+        "model": "sonnet",
+        "prompt": "sha256:37be1e5337db78cb length:3515",
+        "tools": [
+          "Bash",
+          "Read",
+          "Grep",
+          "Glob",
+        ],
+      },
+      "designer": {
+        "autoCompactWindow": 100000,
+        "description": "Executes a design brief in Draft and reports back with a screenshot path.",
+        "model": "haiku",
+        "prompt": "sha256:e91440fb8905c5f5 length:3237",
+        "tools": [
+          "Read",
+          "Write",
+          "Edit",
+          "Glob",
+          "Grep",
+          "mcp__draft__render",
+        ],
+      },
+      "director": {
+        "description": "Directs design work in Draft through the designer subagent.",
+        "model": "opus",
+        "prompt": "sha256:4091ad983497753e length:5223",
+      },
+    },
+    "mcpServers": {
+      "draft": {
+        "alwaysLoad": true,
+        "args": [
+          "<main>",
+          "draft",
+          "mcp",
+          "--dir",
+          "<draft-root>/projects/with-atlas",
+        ],
+        "command": "<exec>",
+        "type": "stdio",
+      },
+    },
+    "plugins": [],
+    "settingSources": [
+      "project",
+      "local",
+    ],
+    "settings": {
+      "claudeMdExcludes": [
+        "/x/**",
+      ],
+      "editorMode": "vim",
+      "enabledPlugins": {
+        "frontend-design@claude-plugins-official": true,
+        "skill-mention@dotfiles": true,
+      },
+      "extraKnownMarketplaces": {
+        "dotfiles": {
+          "source": "x",
+        },
+      },
+      "model": "opus",
+      "promptCacheTtl": "1h",
+      "subagentPromptCacheTtl": "1h",
+      "theme": "dark",
+    },
+  },
+  "model": "opus",
+  "provided": {
+    "additionalDirectories": [
+      "/extra",
+      "<draft-root>/projects/with-atlas",
+      "<repo>",
+    ],
+    "agent": "director",
+    "agents": {
+      "cartographer": {
+        "description": "Answers questions about the product from the atlas and fixes atlas entries that the user or a designer found wrong or missing.",
+        "model": "sonnet",
+        "prompt": "sha256:37be1e5337db78cb length:3515",
+        "tools": [
+          "Bash",
+          "Read",
+          "Grep",
+          "Glob",
+        ],
+      },
+      "designer": {
+        "autoCompactWindow": 100000,
+        "description": "Executes a design brief in Draft and reports back with a screenshot path.",
+        "model": "haiku",
+        "prompt": "sha256:e91440fb8905c5f5 length:3237",
+        "tools": [
+          "Read",
+          "Write",
+          "Edit",
+          "Glob",
+          "Grep",
+          "mcp__draft__render",
+        ],
+      },
+      "director": {
+        "description": "Directs design work in Draft through the designer subagent.",
+        "model": "opus",
+        "prompt": "sha256:4091ad983497753e length:5223",
+      },
+    },
+    "mcpServers": {
+      "draft": {
+        "alwaysLoad": true,
+        "args": [
+          "<main>",
+          "draft",
+          "mcp",
+          "--dir",
+          "<draft-root>/projects/with-atlas",
+        ],
+        "command": "<exec>",
+        "type": "stdio",
+      },
+      "other": {
+        "type": "http",
+      },
+    },
+    "plugins": [],
+    "settingSources": [
+      "project",
+      "local",
+    ],
+    "settings": {
+      "claudeMdExcludes": [
+        "/x/**",
+      ],
+      "editorMode": "vim",
+      "enabledPlugins": {
+        "frontend-design@claude-plugins-official": true,
+        "skill-mention@dotfiles": true,
+      },
+      "extraKnownMarketplaces": {
+        "dotfiles": {
+          "source": "x",
+        },
+      },
+      "model": "opus",
+      "promptCacheTtl": "1h",
+      "subagentPromptCacheTtl": "1h",
+      "theme": "dark",
+    },
+  },
+}
+`;

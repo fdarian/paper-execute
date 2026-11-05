@@ -10,7 +10,7 @@ export const aliasSources = ["commit", "pr", "plan", "doc", "route", "ui", "code
 
 const sqlList = (values: readonly string[]) => values.map((value) => `'${value}'`).join(", ");
 
-const migrations: readonly string[] = [
+export const migrations: readonly string[] = [
 	`
 CREATE TABLE meta (
 	key TEXT PRIMARY KEY,
@@ -123,6 +123,10 @@ CREATE TABLE frame_ref (
 );
 CREATE INDEX frame_ref_ref ON frame_ref (ref_id);
 `,
+	// The atlas maps only the shipped product, so a feature has no status. SQLite accepts DROP COLUMN
+	// here because the CHECK constraint belongs to the dropped column itself; no table rebuild, so
+	// the ON DELETE CASCADE children are never touched.
+	"ALTER TABLE feature DROP COLUMN status;",
 ];
 
 export const schemaVersion = migrations.length;

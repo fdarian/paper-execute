@@ -1,8 +1,9 @@
 import { afterAll, expect, test } from "bun:test";
-import { mkdtempSync, rmSync } from "node:fs";
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { buildClaudeArgs } from "@paper-execute/agent-team";
+import type { CartographerInputs } from "@paper-execute/draft-cartographer";
 
 import { executorLaunch } from "#/backend/launch";
 import { paperBackend } from "#/backend/paper";
@@ -37,8 +38,8 @@ function agents(launch: DesignerLaunch) {
 }
 
 test("draft launch adds the project dir, its MCP server, and limits only the designer's tools", () => {
-	const launch = draftLaunch("demo");
 	const dir = join(dataRoot, "projects", "demo");
+	const launch = draftLaunch({ project: "demo", dir }, undefined);
 	const args = claudeArgs(launch);
 
 	expect(valueAfter(args, "--add-dir")).toBe(dir);
@@ -83,4 +84,56 @@ test("paper launch keeps the plugin dir, executor MCP args, and unrestricted age
 	expect(config.designer?.tools).toBeUndefined();
 	expect(config.designer?.prompt).toContain("You design in Paper via mcp__paper__execute.");
 	expect(config.designer?.prompt).not.toContain("{{");
+});
+
+test("draft launch without an atlas has no cartographer, extra dirs, or env", () => {
+	const dir = join(dataRoot, "projects", "demo");
+	const launch = draftLaunch({ project: "demo", dir }, undefined);
+
+	expect(Object.keys(agents(launch))).toEqual(["director", "designer"]);
+	expect(valueAfter(claudeArgs(launch), "--add-dir")).toBe(dir);
+	expect(designerTeam(launch).env).toEqual({});
+	expect(agents(launch).director?.prompt).not.toContain("## Atlas");
+});
+
+test("draft launch with an atlas adds the cartographer, the repo dir, an absolute data dir and the atlas rules", () => {
+	const dir = join(dataRoot, "projects", "demo");
+	const repo = join(dataRoot, "repo");
+	mkdirSync(repo, { recursive: true });
+	writeFileSync(join(repo, "README.md"), "");
+	const atlas: CartographerInputs = {
+		project: "demo",
+		dir,
+		repo,
+		atlas: ["draft", "atlas", "--project", "demo"],
+	};
+	const launch = draftLaunch({ project: "demo", dir }, atlas);
+	const args = claudeArgs(launch);
+	const config = agents(launch) as Record<
+		string,
+		{ model?: string; tools?: string[]; prompt: string }
+	>;
+
+	expect(Object.keys(config)).toEqual(["director", "designer", "cartographer"]);
+	expect(config.cartographer?.model).toBe("sonnet");
+	expect(config.cartographer?.tools).toEqual(["Bash", "Read", "Grep", "Glob"]);
+	expect(config.cartographer?.prompt).not.toContain("{{");
+	expect(args.filter((_, index) => args[index - 1] === "--add-dir")).toEqual([dir, repo]);
+	expect(designerTeam(launch).env).toEqual({ DRAFT_DATA_DIR: dataRoot });
+	for (const agent of [config.director, config.designer]) {
+		expect(agent?.prompt).toContain("## Atlas");
+		expect(agent?.prompt).toContain(`code pointers into \`${repo}\``);
+	}
+});
+
+test("a launch agent that collides with a built-in agent throws", () => {
+	const dir = join(dataRoot, "projects", "demo");
+	const launch = draftLaunch({ project: "demo", dir }, undefined);
+
+	expect(() =>
+		designerTeam({
+			...launch,
+			agents: { designer: { description: "x", model: "sonnet", prompt: "x" } },
+		}),
+	).toThrow('Launch agent "designer" collides');
 });

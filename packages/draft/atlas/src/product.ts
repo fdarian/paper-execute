@@ -4,7 +4,6 @@ import { assertContainsSymbol, repoPath } from "./repo-path.ts";
 import type { aliasSources } from "./schema.ts";
 import { all, get, run } from "./sqlite.ts";
 
-export type FeatureStatus = "built" | "planned";
 export type AliasSource = (typeof aliasSources)[number];
 
 const kebabName = /^[a-z0-9]+(-[a-z0-9]+)*$/;
@@ -13,7 +12,6 @@ type FeatureRow = {
 	readonly id: number;
 	readonly name: string;
 	readonly summary: string;
-	readonly status: FeatureStatus;
 	readonly confidence: "seeded" | "verified";
 	readonly parent_id: number | null;
 };
@@ -61,7 +59,6 @@ export type FeatureSetInput = {
 	readonly summary?: string;
 	/** `undefined` keeps the current parent (root on create). */
 	readonly parent?: { readonly set: string } | "root";
-	readonly status?: FeatureStatus;
 	/** `true` marks the feature verified; `false` never downgrades. */
 	readonly verified: boolean;
 };
@@ -98,7 +95,7 @@ function resolveParent(
 function insertFeature(
 	atlas: AtlasHandle,
 	head: string,
-	input: Pick<FeatureSetInput, "name" | "summary" | "status" | "verified">,
+	input: Pick<FeatureSetInput, "name" | "summary" | "verified">,
 	parentId: number | null | undefined,
 ): void {
 	assertName(input.name);
@@ -107,11 +104,10 @@ function insertFeature(
 	}
 	run(
 		atlas.db,
-		`INSERT INTO feature (name, summary, status, confidence, parent_id, seen_at)
-		VALUES (?, ?, ?, ?, ?, ?)`,
+		`INSERT INTO feature (name, summary, confidence, parent_id, seen_at)
+		VALUES (?, ?, ?, ?, ?)`,
 		input.name,
 		assertSummary(input.summary),
-		input.status ?? "built",
 		input.verified ? "verified" : "seeded",
 		parentId ?? null,
 		head,
@@ -129,10 +125,9 @@ export function featureSet(input: FeatureSetInput) {
 		run(
 			atlas.db,
 			`UPDATE feature SET
-				summary = ?, status = ?, confidence = ?, parent_id = ?, seen_at = ?
+				summary = ?, confidence = ?, parent_id = ?, seen_at = ?
 			WHERE id = ?`,
 			input.summary === undefined ? existing.summary : assertSummary(input.summary),
-			input.status ?? existing.status,
 			input.verified ? "verified" : existing.confidence,
 			parentId === undefined ? existing.parent_id : parentId,
 			head,
@@ -146,7 +141,6 @@ export type FeatureAddInput = {
 	readonly name: string;
 	readonly summary: string;
 	readonly parent?: string;
-	readonly status?: FeatureStatus;
 };
 
 function parentPath(atlas: AtlasHandle, parentId: number | null): string {

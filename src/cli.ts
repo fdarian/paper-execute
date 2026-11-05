@@ -2,6 +2,7 @@
 
 import { BunRuntime, BunServices } from "@effect/platform-bun";
 import { type CacheTtl, cacheTtlFlag, ccFlags } from "@paper-execute/agent-team";
+import { defaultProjectName, projectDir } from "@paper-execute/draft-project";
 import { Effect, Option } from "effect";
 import { Command, Flag } from "effect/unstable/cli";
 import type { DesignBackend } from "#/backend";
@@ -14,6 +15,7 @@ import {
 	runDesignerAcp,
 	runDesignerClaude,
 } from "#/designer/run";
+import { openProjectAtlas } from "#/draft/atlas";
 import { draftLaunch } from "#/draft/launch";
 import { serveDraftStdio } from "#/draft/mcp";
 import { serveDraftView } from "#/draft/view";
@@ -105,6 +107,13 @@ const draftView = Command.make(
 		),
 ).pipe(Command.withDescription("Serve a live gallery of the project's frames"));
 
+const resolveDraftLaunch = (projectFlag: Option.Option<string>) =>
+	Effect.gen(function* () {
+		const name = Option.getOrElse(projectFlag, () => defaultProjectName(process.cwd()));
+		const project = { project: name, dir: projectDir(name) };
+		return draftLaunch(project, yield* openProjectAtlas(project));
+	});
+
 const draftCc = Command.make(
 	"cc",
 	{
@@ -114,7 +123,10 @@ const draftCc = Command.make(
 			Flag.withDescription("Project name (default: git repo or folder name of the cwd)"),
 		),
 	},
-	(config) => launchClaude(config, () => draftLaunch(Option.getOrUndefined(config.project))),
+	(config) =>
+		resolveDraftLaunch(config.project).pipe(
+			Effect.flatMap((launch) => launchClaude(config, () => launch)),
+		),
 ).pipe(Command.withDescription(ccDescription("draft")));
 
 const draftAcp = Command.make(
@@ -125,7 +137,10 @@ const draftAcp = Command.make(
 			Flag.withDescription("Project name (default: git repo or folder name of the cwd)"),
 		),
 	},
-	(config) => runAcp(config, () => draftLaunch(Option.getOrUndefined(config.project))),
+	(config) =>
+		resolveDraftLaunch(config.project).pipe(
+			Effect.flatMap((launch) => runAcp(config, () => launch)),
+		),
 ).pipe(Command.withDescription(acpDescription));
 
 const draft = Command.make("draft").pipe(

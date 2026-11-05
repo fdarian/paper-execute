@@ -22,7 +22,6 @@ export {
 export { formatList, formatShow, formatSql } from "./format.ts";
 export {
 	type FeatureList,
-	type FilteredRow,
 	list,
 	type TreeRow,
 } from "./list.ts";
@@ -36,7 +35,6 @@ export {
 	docRm,
 	type FeatureAddInput,
 	type FeatureSetInput,
-	type FeatureStatus,
 	featureAdd,
 	featureMerge,
 	featureRename,
@@ -46,6 +44,6 @@ export {
 	unrelate,
 } from "./product.ts";
 export { type Candidate, type FeatureRef, type Resolution, resolve } from "./resolve.ts";
-export { aliasSources } from "./schema.ts";
+export { aliasSources, migrations, schemaVersion, userVersion } from "./schema.ts";
 export { type FeatureView, type ShowResult, type ShowView, show } from "./show.ts";
 export { type SqlResult, sql } from "./sql.ts";

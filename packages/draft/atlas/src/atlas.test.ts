@@ -1,11 +1,12 @@
 import { Database } from "bun:sqlite";
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
-import { existsSync } from "node:fs";
+import { existsSync, mkdirSync } from "node:fs";
 import { join } from "node:path";
 import { Effect } from "effect";
 
 import { Atlas, initAtlas } from "./atlas.ts";
 import { featureSet } from "./product.ts";
+import { migrations, schemaVersion, userVersion } from "./schema.ts";
 import { createTestEnv, headOf, initTestAtlas, type TestEnv, withAtlas } from "./testing.ts";
 
 let env: TestEnv;
@@ -67,6 +68,88 @@ describe("initAtlas", () => {
 	});
 });
 
+describe("migrations", () => {
+	function writeVersionOneDb(): void {
+		mkdirSync(join(env.dir, "common"), { recursive: true });
+		const db = new Database(join(env.dir, "common", "atlas.db"), { create: true });
+		db.exec(migrations[0] as string);
+		db.exec("PRAGMA user_version = 1");
+		db.exec(`
+			INSERT INTO meta (key, value) VALUES ('repo', '${env.repo}');
+			INSERT INTO feature (id, name, summary, status, confidence, parent_id, seen_at) VALUES
+				(1, 'scout', 'Find leads', 'built', 'verified', NULL, 'abc'),
+				(2, 'lead-status', 'Track leads', 'planned', 'seeded', 1, 'abc'),
+				(3, 'thumbs', 'Rate leads', 'built', 'seeded', NULL, 'abc');
+			INSERT INTO alias (term, feature_id, source) VALUES ('status pill', 2, 'ui');
+			INSERT INTO code (feature_id, path, symbol) VALUES (2, 'src/widget.ts', 'renderWidget');
+			INSERT INTO relation (a_id, b_id, note) VALUES (2, 3, 'related');
+		`);
+		db.close();
+	}
+
+	test("a version 1 db drops the feature status column and keeps its data", async () => {
+		writeVersionOneDb();
+		const rows = await withAtlas(
+			env,
+			Effect.gen(function* () {
+				const db = (yield* Atlas).db;
+				return {
+					version: userVersion(db),
+					columns: db
+						.query<{ name: string }, []>("SELECT name FROM pragma_table_info('feature')")
+						.all()
+						.map((column) => column.name),
+					features: db.query("SELECT id, name, parent_id FROM feature ORDER BY id").all(),
+					aliases: db.query("SELECT term, feature_id FROM alias").all(),
+					code: db.query("SELECT feature_id, path, symbol FROM code").all(),
+					relations: db.query("SELECT a_id, b_id, note FROM relation").all(),
+					violations: db.query("PRAGMA foreign_key_check").all(),
+				};
+			}),
+		);
+		expect(rows.version).toBe(schemaVersion);
+		expect(rows.columns).not.toContain("status");
+		expect(rows.features).toEqual([
+			{ id: 1, name: "scout", parent_id: null },
+			{ id: 2, name: "lead-status", parent_id: 1 },
+			{ id: 3, name: "thumbs", parent_id: null },
+		]);
+		expect(rows.aliases).toEqual([{ term: "status pill", feature_id: 2 }]);
+		expect(rows.code).toEqual([{ feature_id: 2, path: "src/widget.ts", symbol: "renderWidget" }]);
+		expect(rows.relations).toEqual([{ a_id: 2, b_id: 3, note: "related" }]);
+		expect(rows.violations).toEqual([]);
+	});
+
+	test("cascades still apply after the migration", async () => {
+		writeVersionOneDb();
+		const remaining = await withAtlas(
+			env,
+			Effect.gen(function* () {
+				const db = (yield* Atlas).db;
+				db.exec("DELETE FROM feature WHERE id = 2");
+				return db
+					.query(
+						"SELECT (SELECT COUNT(*) FROM alias) AS aliases, (SELECT COUNT(*) FROM code) AS code, (SELECT COUNT(*) FROM relation) AS relations",
+					)
+					.get();
+			}),
+		);
+		expect(remaining).toEqual({ aliases: 0, code: 0, relations: 0 });
+	});
+
+	test("a read-only open of an unmigrated db asks for a write command and leaves it untouched", async () => {
+		writeVersionOneDb();
+		const error = await Effect.runPromise(
+			Effect.flip(Effect.void.pipe(Effect.provide(Atlas.layerReadonly(env.options)))),
+		);
+		expect(error._tag).toBe("AtlasInvalid");
+		expect(error.message).toContain("draft atlas init");
+		const db = new Database(join(env.dir, "common", "atlas.db"), { readonly: true });
+		expect(userVersion(db)).toBe(1);
+		db.close();
+	});
+});
+
 describe("Atlas layers", () => {
 	test("fail with AtlasNotInitialized when the db is missing", async () => {
 		const error = await Effect.runPromise(
@@ -97,7 +180,7 @@ describe("Atlas layers", () => {
 		const insert = (name: string) =>
 			db
 				.query(
-					"INSERT INTO feature (name, summary, status, confidence, seen_at) VALUES (?, 's', 'built', 'seeded', 'x')",
+					"INSERT INTO feature (name, summary, confidence, seen_at) VALUES (?, 's', 'seeded', 'x')",
 				)
 				.run(name);
 		expect(() => insert("Upper")).toThrow();

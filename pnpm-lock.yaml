@@ -209,6 +209,12 @@ importers:
       '@paper-execute/agent-team':
         specifier: workspace:*
         version: link:packages/agent-team
+      '@paper-execute/draft-atlas':
+        specifier: workspace:*
+        version: link:packages/draft/atlas
+      '@paper-execute/draft-cartographer':
+        specifier: workspace:*
+        version: link:packages/draft/cartographer
       '@paper-execute/draft-project':
         specifier: workspace:*
         version: link:packages/draft/project
@@ -265,6 +271,15 @@ importers:
         specifier: 'catalog:'
         version: 4.0.0-rc.115
 
+  packages/draft/cartographer:
+    dependencies:
+      '@paper-execute/agent-team':
+        specifier: workspace:*
+        version: link:../../agent-team
+      '@paper-execute/draft-project':
+        specifier: workspace:*
+        version: link:../project
+
   packages/draft/cli:
     dependencies:
       '@effect/platform-bun':
@@ -276,6 +291,9 @@ importers:
       '@paper-execute/draft-atlas':
         specifier: workspace:*
         version: link:../atlas
+      '@paper-execute/draft-cartographer':
+        specifier: workspace:*
+        version: link:../cartographer
       '@paper-execute/draft-project':
         specifier: workspace:*
         version: link:../project

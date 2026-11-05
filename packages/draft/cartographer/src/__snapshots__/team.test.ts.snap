@@ -32,7 +32,7 @@ exports[`claude argv 1`] = `
     "cartographer": {
       "description": "Answers questions about demo from its atlas and keeps the atlas correct.",
       "model": "sonnet",
-      "prompt": "sha256:faf90b29d5a1cd55 length:2768",
+      "prompt": "sha256:992a85e5b76e6549 length:3146",
       "tools": [
         "Bash",
         "Read",
@@ -47,7 +47,7 @@ exports[`claude argv 1`] = `
       "autoCompactWindow": 100000,
       "description": "Indexes one area of demo into the atlas and reports the features it wrote.",
       "model": "haiku",
-      "prompt": "sha256:0d38bdc9927e1951 length:3546",
+      "prompt": "sha256:d16398304b2c3325 length:3969",
       "tools": [
         "Bash",
         "Read",

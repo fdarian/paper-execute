@@ -6,7 +6,12 @@
 		"useIgnoreFile": true
 	},
 	"files": {
-		"includes": ["**", "!assets", "!packages/draft/cli/assets"]
+		"includes": [
+			"**",
+			"!assets",
+			"!packages/draft/cli/assets",
+			"!packages/draft/cartographer/assets"
+		]
 	},
 	"formatter": {
 		"enabled": true,

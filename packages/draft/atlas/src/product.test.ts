@@ -57,14 +57,11 @@ const feature = (name: string, extra: { parent?: string } = {}) =>
 describe("featureAdd", () => {
 	test("creates a seeded feature under a parent", async () => {
 		await withAtlas(env, feature("area"));
-		await withAtlas(
-			env,
-			featureAdd({ name: "child", summary: "child summary", parent: "area", status: "planned" }),
+		await withAtlas(env, featureAdd({ name: "child", summary: "child summary", parent: "area" }));
+		const rows = await query<{ confidence: string; parent: string }>(
+			"SELECT child.confidence, parent.name AS parent FROM feature child JOIN feature parent ON parent.id = child.parent_id",
 		);
-		const rows = await query<{ status: string; confidence: string; parent: string }>(
-			"SELECT child.status, child.confidence, parent.name AS parent FROM feature child JOIN feature parent ON parent.id = child.parent_id",
-		);
-		expect(rows).toEqual([{ status: "planned", confidence: "seeded", parent: "area" }]);
+		expect(rows).toEqual([{ confidence: "seeded", parent: "area" }]);
 	});
 
 	test("an existing name conflicts and the message shows its parent path and summary", async () => {
@@ -96,17 +93,14 @@ describe("featureSet", () => {
 		expect(error._tag).toBe("AtlasInvalid");
 	});
 
-	test("creates seeded built root features stamped with HEAD", async () => {
+	test("creates seeded root features stamped with HEAD", async () => {
 		await withAtlas(env, feature("alpha"));
 		const rows = await query<{
-			status: string;
 			confidence: string;
 			parent_id: null;
 			seen_at: string;
-		}>("SELECT status, confidence, parent_id, seen_at FROM feature");
-		expect(rows).toEqual([
-			{ status: "built", confidence: "seeded", parent_id: null, seen_at: headOf(env.repo) },
-		]);
+		}>("SELECT confidence, parent_id, seen_at FROM feature");
+		expect(rows).toEqual([{ confidence: "seeded", parent_id: null, seen_at: headOf(env.repo) }]);
 	});
 
 	test("verified upgrades confidence and a later unverified write never downgrades", async () => {
@@ -122,11 +116,11 @@ describe("featureSet", () => {
 	test("update keeps omitted fields, including the parent", async () => {
 		await withAtlas(env, feature("root-one"));
 		await withAtlas(env, feature("child", { parent: "root-one" }));
-		await withAtlas(env, featureSet({ name: "child", status: "planned", verified: false }));
-		const rows = await query<{ status: string; parent: string }>(
-			"SELECT child.status, parent.name AS parent FROM feature child JOIN feature parent ON parent.id = child.parent_id",
+		await withAtlas(env, featureSet({ name: "child", verified: true }));
+		const rows = await query<{ summary: string; parent: string }>(
+			"SELECT child.summary, parent.name AS parent FROM feature child JOIN feature parent ON parent.id = child.parent_id",
 		);
-		expect(rows).toEqual([{ status: "planned", parent: "root-one" }]);
+		expect(rows).toEqual([{ summary: "child summary", parent: "root-one" }]);
 		await withAtlas(env, featureSet({ name: "child", parent: "root", verified: false }));
 		expect(await query("SELECT 1 FROM feature WHERE parent_id IS NOT NULL")).toEqual([]);
 	});

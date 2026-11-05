@@ -34,7 +34,6 @@ describe("exportAtlas", () => {
 					name: "lead-status",
 					summary: "Track leads",
 					parent: { set: "scout" },
-					status: "planned",
 					verified: false,
 				});
 				yield* featureSet({ name: "thumbs-feedback", summary: "Rate leads", verified: false });
@@ -60,7 +59,6 @@ describe("exportAtlas", () => {
 		expect(exported.features[0]).toEqual({
 			name: "lead-status",
 			summary: "Track leads",
-			status: "planned",
 			confidence: "seeded",
 			seenAt: headOf(env.repo),
 			parent: "scout",

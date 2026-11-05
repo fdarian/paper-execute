@@ -90,7 +90,7 @@ describe("draft atlas", () => {
 
 		const text = atlas("demo", "show", "status pill");
 		expect(text.exitCode).toBe(0);
-		expect(text.stdout).toContain("lead-status · built · seeded");
+		expect(text.stdout).toContain("lead-status · seeded");
 		expect(text.stdout).toContain(`${join(repo, "src", "widget.ts")}#renderWidget`);
 
 		const shown = JSON.parse(atlas("demo", "show", "lead-status", "--json").stdout);
@@ -99,9 +99,6 @@ describe("draft atlas", () => {
 		expect(atlas("demo", "list").stdout).toContain("lead-status");
 		const listed = JSON.parse(atlas("demo", "list", "--json").stdout);
 		expect(listed.rows.map((row: { name: string }) => row.name)).toEqual(["lead-status"]);
-		expect(JSON.parse(atlas("demo", "list", "--status", "planned", "--json").stdout).rows).toEqual(
-			[],
-		);
 	});
 
 	test("rejects --parent together with --root", () => {

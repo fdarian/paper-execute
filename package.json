@@ -28,6 +28,8 @@
 		"@executor-js/sdk": "^1.5.28",
 		"@modelcontextprotocol/sdk": "^1.29.0",
 		"@paper-execute/agent-team": "workspace:*",
+		"@paper-execute/draft-atlas": "workspace:*",
+		"@paper-execute/draft-cartographer": "workspace:*",
 		"@paper-execute/draft-project": "workspace:*",
 		"@phosphor-icons/core": "^2.1.1",
 		"@standard-schema/spec": "1.1.0",

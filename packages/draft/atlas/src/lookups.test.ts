@@ -41,7 +41,6 @@ const seed = Effect.gen(function* () {
 		name: "lead-status",
 		summary: "Track whether a lead was contacted",
 		parent: { set: "curated-feed" },
-		status: "planned",
 		verified: false,
 	});
 	yield* featureSet({ name: "thumbs-feedback", summary: "Rate leads", verified: true });
@@ -117,7 +116,7 @@ describe("list", () => {
 
 	test("is a pre-order tree with siblings by name", async () => {
 		const result = await withAtlas(env, list());
-		expect(result.kind === "tree" && result.rows.map((row) => [row.depth, row.name])).toEqual([
+		expect(result.rows.map((row) => [row.depth, row.name])).toEqual([
 			[0, "scout"],
 			[1, "curated-feed"],
 			[2, "lead-status"],
@@ -126,11 +125,11 @@ describe("list", () => {
 		]);
 		expect(formatList(result)).toBe(
 			[
-				"scout · built · verified · Find leads",
-				"  curated-feed · built · seeded · Feed of curated leads",
-				"    lead-status · planned · seeded · Track whether a lead was contacted",
-				"  lead-search · built · seeded · Search leads",
-				"thumbs-feedback · built · verified · Rate leads",
+				"scout · verified · Find leads",
+				"  curated-feed · seeded · Feed of curated leads",
+				"    lead-status · seeded · Track whether a lead was contacted",
+				"  lead-search · seeded · Search leads",
+				"thumbs-feedback · verified · Rate leads",
 			].join("\n"),
 		);
 	});
@@ -153,22 +152,6 @@ describe("list", () => {
 		const names = result.rows.map((row) => row.name);
 		expect(names.indexOf("z-child")).toBeLessThan(names.indexOf("scout-extra"));
 	});
-
-	test("with a status, lists only matches with their path", async () => {
-		const result = await withAtlas(env, list({ status: "planned" }));
-		expect(result.kind === "filtered" && result.rows).toEqual([
-			{
-				name: "lead-status",
-				status: "planned",
-				confidence: "seeded",
-				summary: "Track whether a lead was contacted",
-				path: ["scout", "curated-feed", "lead-status"],
-			},
-		]);
-		expect(formatList(result)).toBe(
-			"scout > curated-feed > lead-status · planned · seeded · Track whether a lead was contacted",
-		);
-	});
 });
 
 describe("show", () => {
@@ -182,7 +165,6 @@ describe("show", () => {
 		expect(result?.kind === "feature" && result.feature).toEqual({
 			name: "lead-status",
 			summary: "Track whether a lead was contacted",
-			status: "planned",
 			confidence: "seeded",
 			seenAt: headOf(env.repo),
 			path: ["scout", "curated-feed", "lead-status"],
@@ -214,7 +196,7 @@ describe("show", () => {
 "atlas demo · repo <repo> · HEAD <sha7>
 [seeded] summaries are machine-written; verify against code before relying on them
 
-lead-status · planned · seeded · seen <sha7>
+lead-status · seeded · seen <sha7>
   Track whether a lead was contacted
   path     scout > curated-feed > lead-status
   aliases  lead state (plan), status pill (ui)
@@ -237,16 +219,16 @@ describe("sql", () => {
 		await withAtlas(env, seed);
 		const result = await withReadonlyAtlas(
 			env,
-			sql("SELECT name, status FROM feature WHERE name LIKE 'lead-%' ORDER BY name"),
+			sql("SELECT name, confidence FROM feature WHERE name LIKE 'lead-%' ORDER BY name"),
 		);
 		expect(result).toEqual({
-			columns: ["name", "status"],
+			columns: ["name", "confidence"],
 			rows: [
-				["lead-search", "built"],
-				["lead-status", "planned"],
+				["lead-search", "seeded"],
+				["lead-status", "seeded"],
 			],
 		});
-		expect(formatSql(result)).toBe("name\tstatus\nlead-search\tbuilt\nlead-status\tplanned");
+		expect(formatSql(result)).toBe("name\tconfidence\nlead-search\tseeded\nlead-status\tseeded");
 	});
 
 	test("a write statement fails", async () => {

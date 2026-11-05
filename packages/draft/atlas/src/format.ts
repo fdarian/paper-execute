@@ -35,7 +35,7 @@ function featureBlock(feature: FeatureView): string {
 
 	const width = Math.max(0, ...sections.map((section) => section[0].length)) + 2;
 	const lines = [
-		`${feature.name} · ${feature.status} · ${feature.confidence} · seen ${sha7(feature.seenAt)}`,
+		`${feature.name} · ${feature.confidence} · seen ${sha7(feature.seenAt)}`,
 		`  ${feature.summary}`,
 	];
 	for (const section of sections) {
@@ -70,16 +70,8 @@ export function formatShow(view: ShowView): string {
 }
 
 export function formatList(list: FeatureList): string {
-	if (list.kind === "tree") {
-		return list.rows
-			.map(
-				(row) =>
-					`${"  ".repeat(row.depth)}${row.name} · ${row.status} · ${row.confidence} · ${row.summary}`,
-			)
-			.join("\n");
-	}
 	return list.rows
-		.map((row) => `${row.path.join(" > ")} · ${row.status} · ${row.confidence} · ${row.summary}`)
+		.map((row) => `${"  ".repeat(row.depth)}${row.name} · ${row.confidence} · ${row.summary}`)
 		.join("\n");
 }
 

@@ -7,12 +7,12 @@ The input is the user's scope (for example "Scout only"). The default scope is t
 
 1. **State.** Run `{{atlas}} list`. If it's non-empty, seed only what's missing.
 2. **Skeleton (you, no deep reads).** Build the vocabulary and the area split from:
-   - the repo layout: `git -C {{repo}} ls-files | awk -F/ '{print $1"/"$2"/"$3}' | sort | uniq -c | sort -rn | head -80`
+   - the repo layout: `git -C {{repo}} ls-tree -r --name-only main | awk -F/ '{print $1"/"$2"/"$3}' | sort | uniq -c | sort -rn | head -80`
    - AGENTS.md, CLAUDE.md and README in the scope's directories
-   - `git log --format=%s -n 300` (add `-- <dirs>` when scoped)
-   - branch names: `git branch -a --format='%(refname:short)' | head -100`
+   - `git -C {{repo}} log main --format=%s -n 300` (add `-- <dirs>` when scoped)
+   - branch names: `git -C {{repo}} branch -a --merged main --format='%(refname:short)' | head -100`
 
-   Pick 4 to 10 areas for the scope. An area is a product domain (what users would call a part of the product: feed, replies, curation), not an app or service. Its code usually spans several apps and services. A surface with its own users and its own vocabulary (an internal admin panel, a bot) can be an area of its own. For each area, write the root or area feature yourself (`feature add <area> --summary … [--parent <root>]`), with its aliases. Then map each area to its directories in every app and service (`git ls-files | grep -i <term>` per area), so the surveyors don't overlap.
+   Pick 4 to 10 areas for the scope. An area is a product domain (what users would call a part of the product: feed, replies, curation), not an app or service. Its code usually spans several apps and services. A surface with its own users and its own vocabulary (an internal admin panel, a bot) can be an area of its own. For each area, write the root or area feature yourself (`feature add <area> --summary … [--parent <root>]`), with its aliases. Then map each area to its directories in every app and service (`git -C {{repo}} ls-tree -r --name-only main | grep -i <term>` per area), so the surveyors don't overlap.
 3. **Survey.** Launch one `surveyor` per area in a single message. Each brief has:
    - the area feature name and its parent
    - the directories it owns, across all apps and services

@@ -14,5 +14,7 @@ export function executorLaunch(backend: DesignBackend, booted: BootedPlugins): D
 		instructions: buildServerInstructions(booted.registry.instructionsText, backend),
 		pluginDirs: backend === paperBackend ? [materializePaperRefsPlugin()] : [],
 		addDirs: [],
+		agents: {},
+		env: {},
 	};
 }

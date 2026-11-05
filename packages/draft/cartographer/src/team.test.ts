@@ -5,7 +5,7 @@ import { join } from "node:path";
 import { buildClaudeArgs, selfCommand } from "@paper-execute/agent-team";
 import { dataDir, projectLayout } from "@paper-execute/draft-project";
 
-import { cartographerTeam } from "./team.ts";
+import { cartographerSubagent, cartographerTeam } from "./team.ts";
 
 const sandbox = realpathSync(mkdtempSync(join(tmpdir(), "cartographer-team-")));
 const dataRoot = join(sandbox, "data");
@@ -37,7 +37,7 @@ afterAll(() => {
 	rmSync(sandbox, { recursive: true, force: true });
 });
 
-const inputs = { project: "demo", dir, repo };
+const inputs = { project: "demo", dir, repo, atlas: selfCommand(["atlas", "--project", "demo"]) };
 
 function prompts(team: ReturnType<typeof cartographerTeam>) {
 	return Object.values(team.agents).map((agent) => agent.prompt);
@@ -97,17 +97,40 @@ test("fills every placeholder in the prompts and the materialized skills", () =>
 	}
 	expect(team.agents.cartographer?.prompt).toContain(`Write \`${tokens}\``);
 	expect(skillFiles(pluginDir)[0]).toContain(`${atlas} list`);
-	expect(skillFiles(pluginDir)[0]).toContain(`git -C ${repo} ls-files`);
+	expect(skillFiles(pluginDir)[0]).toContain(`git -C ${repo} ls-tree -r --name-only main`);
 	expect(skillFiles(pluginDir)[0]).toContain(`write \`${tokens}\``);
 	expect(readFileSync(join(pluginDir, ".claude-plugin", "plugin.json"), "utf8")).toContain(
 		'"cartographer"',
 	);
-	expect(team.agents.surveyor?.prompt).toContain(`git -C ${repo} log --format=%s -n 150`);
+	expect(team.agents.surveyor?.prompt).toContain(`git -C ${repo} log main --format=%s -n 150`);
+});
+
+test("the on-call subagent fills every placeholder and uses the given atlas command", () => {
+	const agent = cartographerSubagent({
+		...inputs,
+		atlas: ["/opt/draft bin/draft", "atlas", "--project", "demo"],
+	});
+
+	expect(agent.model).toBe("sonnet");
+	expect(agent.tools).toEqual(["Bash", "Read", "Grep", "Glob"]);
+	expect(agent.prompt).not.toMatch(/\{\{[^}]*\}\}/);
+	expect(agent.prompt).toContain("`'/opt/draft bin/draft' atlas --project demo <command>`");
+	expect(agent.prompt).toContain(
+		"`'/opt/draft bin/draft' atlas --project demo feature set <name> --verified`",
+	);
+	expect(agent.prompt).toContain(`whose code is in \`${repo}\``);
+	expect(agent.prompt).toContain(
+		"You are the cartographer, on call in a design session for `demo`.",
+	);
 });
 
 test("shell-quotes the atlas command per argument when a path or the project has a space", () => {
 	process.execPath = "/tmp/with space/bun";
-	const team = cartographerTeam({ ...inputs, project: "my project" });
+	const team = cartographerTeam({
+		...inputs,
+		project: "my project",
+		atlas: selfCommand(["atlas", "--project", "my project"]),
+	});
 	const prompt = team.agents.cartographer?.prompt ?? "";
 
 	const compiled = Bun.main.startsWith("/$bunfs/");
@@ -117,7 +140,11 @@ test("shell-quotes the atlas command per argument when a path or the project has
 });
 
 test("escapes single quotes inside a quoted argument", () => {
-	const team = cartographerTeam({ ...inputs, project: "it's" });
+	const team = cartographerTeam({
+		...inputs,
+		project: "it's",
+		atlas: selfCommand(["atlas", "--project", "it's"]),
+	});
 
 	expect(team.agents.cartographer?.prompt).toContain(`--project 'it'\\''s' <command>`);
 });

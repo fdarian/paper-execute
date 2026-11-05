@@ -11,7 +11,6 @@ import {
 	docAdd,
 	docRm,
 	exportAtlas,
-	type FeatureStatus,
 	featureAdd,
 	featureMerge,
 	featureRename,
@@ -33,8 +32,6 @@ import { Argument, Command, Flag } from "effect/unstable/cli";
 import { runCartographerAcp, runCartographerClaude } from "./cartographer/run.ts";
 import { atlasGroup, inProject, launchInProject, withAtlas, withReadonlyAtlas } from "./run.ts";
 import { startAtlasViewServer } from "./view/server.ts";
-
-const statuses = ["built", "planned"] as const satisfies readonly FeatureStatus[];
 
 const switchFlag = (name: string) => Flag.Boolean(name).pipe(Flag.withDefault(false));
 
@@ -82,20 +79,14 @@ const showCommand = Command.make(
 		),
 ).pipe(Command.withDescription("Show features by name, alias or substring"));
 
-const listCommand = Command.make(
-	"list",
-	{
-		status: Flag.optional(Flag.Literals("status", statuses)),
-		json,
-	},
-	(config) =>
-		withAtlas(
-			list({ status: Option.getOrUndefined(config.status) }).pipe(
-				Effect.map((features) =>
-					config.json ? JSON.stringify(features, null, 2) : formatList(features),
-				),
+const listCommand = Command.make("list", { json }, (config) =>
+	withAtlas(
+		list().pipe(
+			Effect.map((features) =>
+				config.json ? JSON.stringify(features, null, 2) : formatList(features),
 			),
 		),
+	),
 ).pipe(Command.withDescription("List the feature tree"));
 
 const sqlCommand = Command.make(
@@ -118,7 +109,6 @@ const featureSetCommand = Command.make(
 		),
 		parent: Flag.optional(Flag.String("parent")),
 		root: switchFlag("root").pipe(Flag.withDescription("Move the feature to the top level")),
-		status: Flag.optional(Flag.Literals("status", statuses)),
 		verified: switchFlag("verified"),
 	},
 	(config) =>
@@ -136,7 +126,6 @@ const featureSetCommand = Command.make(
 								onNone: () => undefined,
 								onSome: (set) => ({ set }),
 							}),
-					status: Option.getOrUndefined(config.status),
 					verified: config.verified,
 				});
 				return `feature ${result.name} ${result.created ? "created" : "updated"}`;
@@ -150,7 +139,6 @@ const featureAddCommand = Command.make(
 		name: featureArg("name"),
 		summary: Flag.String("summary").pipe(Flag.withDescription("One line")),
 		parent: Flag.optional(Flag.String("parent")),
-		status: Flag.optional(Flag.Literals("status", statuses)),
 	},
 	(config) =>
 		withAtlas(
@@ -158,7 +146,6 @@ const featureAddCommand = Command.make(
 				name: config.name,
 				summary: config.summary,
 				parent: Option.getOrUndefined(config.parent),
-				status: Option.getOrUndefined(config.status),
 			}).pipe(Effect.map((result) => `feature ${result.name} created`)),
 		),
 ).pipe(Command.withDescription("Create a feature; fails if the name exists"));

@@ -2,14 +2,13 @@ import { join } from "node:path";
 import { Effect } from "effect";
 
 import { Atlas, type AtlasHandle, read } from "./atlas.ts";
-import type { AliasSource, FeatureStatus } from "./product.ts";
+import type { AliasSource } from "./product.ts";
 import { type Candidate, resolve } from "./resolve.ts";
 import { all, get } from "./sqlite.ts";
 
 export type FeatureView = {
 	readonly name: string;
 	readonly summary: string;
-	readonly status: FeatureStatus;
 	readonly confidence: "seeded" | "verified";
 	readonly seenAt: string;
 	/** Root to self. */
@@ -39,7 +38,6 @@ type Row = {
 	readonly id: number;
 	readonly name: string;
 	readonly summary: string;
-	readonly status: FeatureStatus;
 	readonly confidence: "seeded" | "verified";
 	readonly seen_at: string;
 };
@@ -48,7 +46,7 @@ function loadFeature(atlas: AtlasHandle, id: number): FeatureView {
 	const db = atlas.db;
 	const row = get<Row>(
 		db,
-		"SELECT id, name, summary, status, confidence, seen_at FROM feature WHERE id = ?",
+		"SELECT id, name, summary, confidence, seen_at FROM feature WHERE id = ?",
 		id,
 	);
 	if (row === null) throw new Error(`Feature ${id} vanished during show`);
@@ -66,7 +64,6 @@ function loadFeature(atlas: AtlasHandle, id: number): FeatureView {
 	return {
 		name: row.name,
 		summary: row.summary,
-		status: row.status,
 		confidence: row.confidence,
 		seenAt: row.seen_at,
 		path: path.map((entry) => entry.name),
