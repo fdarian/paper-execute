@@ -20,9 +20,9 @@ const base = {
 
 const emptyBoot = { registry: { instructionsText: "" } } as Parameters<typeof executorLaunch>[1];
 
-const projectsRoot = mkdtempSync(join(tmpdir(), "draft-launch-test-"));
-process.env.DRAFT_PROJECTS_DIR = projectsRoot;
-afterAll(() => rmSync(projectsRoot, { recursive: true, force: true }));
+const dataRoot = mkdtempSync(join(tmpdir(), "draft-launch-test-"));
+process.env.DRAFT_DATA_DIR = dataRoot;
+afterAll(() => rmSync(dataRoot, { recursive: true, force: true }));
 
 function valueAfter(args: readonly string[], flag: string): string {
 	const index = args.indexOf(flag);
@@ -39,7 +39,7 @@ function agents(launch: DesignerLaunch) {
 
 test("draft launch adds the project dir, its MCP server, and limits only the designer's tools", () => {
 	const launch = draftLaunch("demo");
-	const dir = join(projectsRoot, "demo");
+	const dir = join(dataRoot, "projects", "demo");
 	const args = buildClaudeArgs({ ...base, launch });
 
 	expect(valueAfter(args, "--add-dir")).toBe(dir);
