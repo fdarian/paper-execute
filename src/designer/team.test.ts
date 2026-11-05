@@ -2,21 +2,20 @@ import { afterAll, expect, test } from "bun:test";
 import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { buildClaudeArgs } from "@paper-execute/agent-team";
 
 import { executorLaunch } from "#/backend/launch";
 import { paperBackend } from "#/backend/paper";
 import { draftLaunch } from "#/draft/launch";
-import { buildClaudeArgs } from "./claude-code.ts";
 import type { DesignerLaunch } from "./launch.ts";
+import { designerTeam } from "./team.ts";
 
-const base = {
-	inheritSettings: {},
-	literalSettings: {},
-	cacheTtl: undefined,
-	continue: false,
-	resume: false,
-	passthrough: [],
-};
+const settings = { inheritSettings: {}, literalSettings: {}, cacheTtl: undefined };
+const options = { continue: false, resume: false, passthrough: [] };
+
+function claudeArgs(launch: DesignerLaunch) {
+	return buildClaudeArgs(designerTeam(launch), settings, options);
+}
 
 const emptyBoot = { registry: { instructionsText: "" } } as Parameters<typeof executorLaunch>[1];
 
@@ -31,7 +30,7 @@ function valueAfter(args: readonly string[], flag: string): string {
 }
 
 function agents(launch: DesignerLaunch) {
-	return JSON.parse(valueAfter(buildClaudeArgs({ ...base, launch }), "--agents")) as Record<
+	return JSON.parse(valueAfter(claudeArgs(launch), "--agents")) as Record<
 		string,
 		{ prompt: string; tools?: string[] }
 	>;
@@ -40,7 +39,7 @@ function agents(launch: DesignerLaunch) {
 test("draft launch adds the project dir, its MCP server, and limits only the designer's tools", () => {
 	const launch = draftLaunch("demo");
 	const dir = join(dataRoot, "projects", "demo");
-	const args = buildClaudeArgs({ ...base, launch });
+	const args = claudeArgs(launch);
 
 	expect(valueAfter(args, "--add-dir")).toBe(dir);
 	expect(args).not.toContain("--plugin-dir");
@@ -71,7 +70,7 @@ test("draft launch adds the project dir, its MCP server, and limits only the des
 
 test("paper launch keeps the plugin dir, executor MCP args, and unrestricted agents", () => {
 	const launch = executorLaunch(paperBackend, emptyBoot);
-	const args = buildClaudeArgs({ ...base, launch });
+	const args = claudeArgs(launch);
 
 	expect(valueAfter(args, "--plugin-dir")).toContain("paper-refs-");
 	expect(args).not.toContain("--add-dir");
@@ -84,25 +83,4 @@ test("paper launch keeps the plugin dir, executor MCP args, and unrestricted age
 	expect(config.designer?.tools).toBeUndefined();
 	expect(config.designer?.prompt).toContain("You design in Paper via mcp__paper__execute.");
 	expect(config.designer?.prompt).not.toContain("{{");
-});
-
-test("-c and -r land right before the passthrough", () => {
-	const launch = executorLaunch(paperBackend, emptyBoot);
-	const args = buildClaudeArgs({
-		...base,
-		launch,
-		continue: true,
-		resume: true,
-		passthrough: ["abc", "--verbose"],
-	});
-	expect(args.slice(-4)).toEqual(["--continue", "--resume", "abc", "--verbose"]);
-});
-
-test("--cache-ttl lands in the --settings JSON", () => {
-	const launch = executorLaunch(paperBackend, emptyBoot);
-	const settings = JSON.parse(
-		valueAfter(buildClaudeArgs({ ...base, launch, cacheTtl: "5m" }), "--settings"),
-	) as Record<string, unknown>;
-	expect(settings.promptCacheTtl).toBe("5m");
-	expect(settings.subagentPromptCacheTtl).toBe("5m");
 });

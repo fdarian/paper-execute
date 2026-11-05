@@ -3,14 +3,15 @@ import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
+import { buildClaudeArgs } from "@paper-execute/agent-team";
 import { Effect } from "effect";
 import { brilliantBackend } from "#/backend/brilliant";
 import { executorLaunch } from "#/backend/launch";
 import { paperBackend } from "#/backend/paper";
 import { draftLaunch } from "#/draft/launch";
 import type { BootedPlugins } from "#/plugin/boot";
-import { buildClaudeArgs } from "./claude-code.ts";
 import type { DesignerLaunch } from "./launch.ts";
+import { designerTeam } from "./team.ts";
 
 // Pins the full claude argv and ACP session options of every launch, so the launcher can move between packages untouched.
 
@@ -117,13 +118,17 @@ const claudeInputs = {
 	},
 	literalSettings: { claudeMdExcludes: ["/x/**"] },
 	cacheTtl: "5m",
-	continue: true,
-	resume: true,
-	passthrough: ["abc", "--verbose"],
 } as const;
 
+const claudeOptions = { continue: true, resume: true, passthrough: ["abc", "--verbose"] };
+
 let capturedSessionOptions: unknown;
-mock.module("@agentclientprotocol/claude-agent-acp", () => ({
+// The adapter is a dependency of agent-team only, so it has to be resolved from there for the mock to match.
+const acpAdapter = Bun.resolveSync(
+	"@agentclientprotocol/claude-agent-acp",
+	join(import.meta.dir, "../../packages/agent-team"),
+);
+mock.module(acpAdapter, () => ({
 	runAcp: (_logger: unknown, options: { sessionOptions: unknown }) => {
 		capturedSessionOptions = options.sessionOptions;
 		return { connection: { closed: Promise.resolve() }, agent: { dispose: async () => {} } };
@@ -131,7 +136,7 @@ mock.module("@agentclientprotocol/claude-agent-acp", () => ({
 }));
 
 async function acpSessionOptions(name: string) {
-	const { runDesignerAcp } = await import("./acp.ts");
+	const { runDesignerAcp } = await import("./run.ts");
 	const savedConsole = { ...console };
 	try {
 		await Effect.runPromise(
@@ -156,7 +161,9 @@ async function acpSessionOptions(name: string) {
 for (const name of Object.keys(launches)) {
 	test(`${name}: claude argv`, () => {
 		const launch = (launches[name] as (booted: BootedPlugins) => DesignerLaunch)(emptyBoot);
-		expect(normalizeArgs(buildClaudeArgs({ launch, ...claudeInputs }))).toMatchSnapshot();
+		expect(
+			normalizeArgs(buildClaudeArgs(designerTeam(launch), claudeInputs, claudeOptions)),
+		).toMatchSnapshot();
 	});
 
 	test(`${name}: ACP session options`, async () => {

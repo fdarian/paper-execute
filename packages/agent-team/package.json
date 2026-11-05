@@ -1,0 +1,13 @@
+{
+	"name": "@paper-execute/agent-team",
+	"version": "0.1.0",
+	"private": true,
+	"type": "module",
+	"exports": {
+		".": "./src/index.ts"
+	},
+	"dependencies": {
+		"@agentclientprotocol/claude-agent-acp": "0.93.0",
+		"effect": "catalog:"
+	}
+}
