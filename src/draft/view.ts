@@ -1,4 +1,4 @@
-import { defaultProjectName, projectDir } from "./project.ts";
+import { defaultProjectName, projectDir } from "@paper-execute/draft-project";
 import { startDraftServer } from "./server.ts";
 
 export async function serveDraftView(

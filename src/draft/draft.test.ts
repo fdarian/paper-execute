@@ -2,14 +2,8 @@ import { afterAll, beforeAll, describe, expect, test } from "bun:test";
 import { mkdirSync, mkdtempSync, realpathSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-
+import { defaultViewportWidth, parseViewportWidth, resolveFrame } from "./frame.ts";
 import { rewriteIcons } from "./icons.ts";
-import {
-	defaultViewportWidth,
-	parseViewportWidth,
-	resolveFrame,
-	resolveInside,
-} from "./project.ts";
 import { ChromeRenderer, findChrome } from "./renderer.ts";
 import { type DraftServer, startDraftServer } from "./server.ts";
 
@@ -81,14 +75,6 @@ describe("viewport width", () => {
 });
 
 describe("path escape", () => {
-	test("resolveInside rejects paths outside the project", () => {
-		expect(resolveInside(root, "a.html")).toBe(join(root, "a.html"));
-		expect(() => resolveInside(root, "../etc/passwd")).toThrow("outside");
-		expect(() => resolveInside(root, join(outside, "secret.txt"))).toThrow("outside");
-		expect(() => resolveInside(root, "link/secret.txt")).toThrow("outside");
-		expect(() => resolveInside(root, ".")).toThrow("outside");
-	});
-
 	test("resolveFrame returns the relative path", () => {
 		expect(resolveFrame(root, join(root, "a.html")).path).toBe("a.html");
 		expect(() => resolveFrame(root, "missing.html")).toThrow("No such frame");

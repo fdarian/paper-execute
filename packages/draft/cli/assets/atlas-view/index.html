@@ -1,0 +1,550 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<title>Atlas</title>
+<style>
+  :root {
+    --bg: #fafaf8; --panel: #ffffff; --line: #e4e2dc; --text: #1d1d1b; --muted: #6b6a64;
+    --accent: #2f5fd0; --accent-soft: #e8eefc; --hover: #f1f0ec; --sel: #e8eefc;
+    --built: #1f7a46; --built-bg: #e3f4ea; --planned: #9a5b00; --planned-bg: #fdf0d9;
+    --seeded: #6b6a64; --seeded-bg: #eceae4; --verified: #1f5fa8; --verified-bg: #e1edfb;
+    --stale: #b3261e;
+    --c-feature: #2f5fd0; --c-alias: #b8860b; --c-code: #1f7a46; --c-doc: #8a4fbf;
+    --mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #151515; --panel: #1d1d1c; --line: #33322f; --text: #e8e6e0; --muted: #9a988f;
+      --accent: #8fb0ff; --accent-soft: #232c45; --hover: #262624; --sel: #232c45;
+      --built: #6fd19a; --built-bg: #173323; --planned: #f0b45a; --planned-bg: #3a2b10;
+      --seeded: #a8a69c; --seeded-bg: #2a2a28; --verified: #8fc0ff; --verified-bg: #17293f;
+      --stale: #ff8a80;
+      --c-feature: #8fb0ff; --c-alias: #e6c15a; --c-code: #6fd19a; --c-doc: #c9a0f0;
+    }
+  }
+  * { box-sizing: border-box; }
+  html, body { height: 100%; margin: 0; }
+  body { font: 14px/1.45 var(--sans); background: var(--bg); color: var(--text); display: flex; flex-direction: column; }
+  a { color: var(--accent); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  code, .mono { font-family: var(--mono); font-size: 12.5px; }
+
+  header { padding: 10px 16px; border-bottom: 1px solid var(--line); background: var(--panel); display: flex; flex-wrap: wrap; gap: 6px 18px; align-items: baseline; }
+  header h1 { font-size: 16px; margin: 0; }
+  header .meta { color: var(--muted); font-size: 12.5px; }
+  header .counts { margin-left: auto; display: flex; gap: 10px; font-size: 12.5px; }
+  .count { display: inline-flex; align-items: center; gap: 5px; }
+  .dot { width: 9px; height: 9px; border-radius: 50%; display: inline-block; }
+
+  nav.tabs { display: flex; gap: 2px; padding: 0 12px; background: var(--panel); border-bottom: 1px solid var(--line); }
+  nav.tabs button { all: unset; cursor: pointer; padding: 8px 14px; color: var(--muted); border-bottom: 2px solid transparent; }
+  nav.tabs button[aria-selected="true"] { color: var(--text); border-bottom-color: var(--accent); }
+  nav.tabs button:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+
+  main { flex: 1; min-height: 0; display: flex; }
+  .view { flex: 1; min-width: 0; display: none; }
+  .view.active { display: flex; }
+
+  .sidebar { width: 380px; min-width: 260px; max-width: 45%; border-right: 1px solid var(--line); display: flex; flex-direction: column; background: var(--panel); }
+  .search { padding: 10px; border-bottom: 1px solid var(--line); }
+  .search input { width: 100%; padding: 7px 10px; border-radius: 6px; border: 1px solid var(--line); background: var(--bg); color: var(--text); font: inherit; }
+  .search input:focus { outline: 2px solid var(--accent); outline-offset: -1px; }
+  .search .hint { color: var(--muted); font-size: 12px; margin-top: 6px; }
+  .tree { flex: 1; overflow: auto; padding: 6px 0; }
+  .row { display: flex; align-items: center; gap: 6px; padding: 3px 10px 3px 0; cursor: pointer; border-left: 3px solid transparent; }
+  .row:hover { background: var(--hover); }
+  .row.sel { background: var(--sel); border-left-color: var(--accent); }
+  .row .caret { width: 18px; text-align: center; color: var(--muted); flex: none; user-select: none; }
+  .row .caret.leaf { visibility: hidden; }
+  .row .name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 0 1 auto; }
+  .row .name.dim { color: var(--muted); }
+  .row .via { color: var(--muted); font-size: 11.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .row .spacer { flex: 1; }
+  .row .codecount { color: var(--muted); font-size: 11.5px; font-family: var(--mono); flex: none; }
+
+  .badge { font-size: 10.5px; padding: 1px 6px; border-radius: 999px; flex: none; line-height: 1.5; letter-spacing: .02em; }
+  .badge.built { color: var(--built); background: var(--built-bg); }
+  .badge.planned { color: var(--planned); background: var(--planned-bg); }
+  .badge.seeded { color: var(--seeded); background: var(--seeded-bg); }
+  .badge.verified { color: var(--verified); background: var(--verified-bg); }
+
+  .detail { flex: 1; min-width: 0; overflow: auto; padding: 20px 28px 40px; }
+  .detail .empty { color: var(--muted); margin-top: 40px; text-align: center; }
+  .detail h2 { margin: 6px 0 6px; font-size: 22px; }
+  .detail .badges { display: flex; gap: 6px; margin-bottom: 10px; flex-wrap: wrap; }
+  .crumbs { font-size: 12.5px; color: var(--muted); display: flex; flex-wrap: wrap; gap: 4px; }
+  .crumbs .sep { opacity: .6; }
+  .summary { margin: 8px 0 4px; max-width: 70ch; }
+  .summary.none { color: var(--muted); font-style: italic; }
+  .stamps { color: var(--muted); font-size: 12px; margin-top: 4px; }
+  section.block { margin-top: 22px; }
+  section.block h3 { font-size: 11.5px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); margin: 0 0 8px; font-weight: 600; }
+  .chips { display: flex; flex-wrap: wrap; gap: 6px; }
+  .chip { display: inline-flex; align-items: baseline; gap: 6px; padding: 2px 9px; border-radius: 999px; background: var(--accent-soft); color: var(--text); border: 1px solid var(--line); }
+  .chip small { color: var(--muted); font-size: 11px; }
+  a.chip { color: var(--accent); }
+  ul.plain { list-style: none; margin: 0; padding: 0; }
+  ul.plain li { padding: 4px 0; border-bottom: 1px dashed var(--line); display: flex; gap: 10px; align-items: baseline; flex-wrap: wrap; }
+  ul.plain li:last-child { border-bottom: 0; }
+  ul.plain .sym { color: var(--muted); }
+  ul.plain .sub { color: var(--muted); font-size: 12.5px; }
+  ul.plain .note { flex-basis: 100%; color: var(--muted); font-size: 12.5px; padding-left: 2px; }
+  .copy { cursor: pointer; color: var(--accent); position: relative; }
+  .copy:hover { text-decoration: underline; }
+  .copy:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .copy.copied::after, .copy.failed::after { content: "copied"; margin-left: 8px; font-family: var(--sans); font-size: 11px; color: var(--built); }
+  .copy.failed::after { content: "copy failed"; color: var(--stale); }
+  .none-note { color: var(--muted); font-size: 13px; }
+
+  #graph-wrap { flex: 1; min-width: 0; position: relative; }
+  #cy { position: absolute; inset: 0; }
+  .legend { position: absolute; left: 12px; top: 12px; background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; font-size: 12px; display: flex; flex-direction: column; gap: 4px; z-index: 2; }
+  .graph-msg { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; color: var(--muted); text-align: center; padding: 20px; }
+  #graph-detail { flex: none; width: 380px; max-width: 45%; border-left: 1px solid var(--line); background: var(--panel); }
+
+  .fatal { padding: 30px; color: var(--stale); }
+  header .meta.err { color: var(--stale); }
+  .key { display: inline-block; width: 18px; height: 0; border-top: 2px solid var(--muted); }
+  .key.dashed { border-top-style: dashed; border-top-width: 1px; }
+</style>
+</head>
+<body>
+<header>
+  <h1 id="h-project"></h1>
+  <span class="meta" id="h-head"></span>
+  <span class="meta err" id="h-err"></span>
+  <span class="counts" id="h-counts"></span>
+</header>
+<nav class="tabs" role="tablist">
+  <button role="tab" id="tab-features" aria-selected="true" data-tab="features">Features</button>
+  <button role="tab" id="tab-graph" aria-selected="false" data-tab="graph">Graph</button>
+</nav>
+<main>
+  <section class="view active" id="view-features">
+    <aside class="sidebar">
+      <div class="search">
+        <input id="q" type="search" placeholder="Search name, alias or summary" autocomplete="off" spellcheck="false">
+        <div class="hint" id="q-hint"></div>
+      </div>
+      <div class="tree" id="tree" role="tree"></div>
+    </aside>
+    <div class="detail" id="detail"></div>
+  </section>
+  <section class="view" id="view-graph">
+    <div id="graph-wrap">
+      <div class="legend" id="legend"></div>
+      <div id="cy"></div>
+    </div>
+    <div class="detail" id="graph-detail"></div>
+  </section>
+</main>
+
+<script src="/cytoscape.js" async></script>
+<script>
+"use strict";
+(function () {
+  // ---------- DOM helper (text only, never innerHTML, so atlas content cannot inject markup) ----------
+  function h(tag, attrs) {
+    const el = document.createElement(tag);
+    if (attrs) {
+      for (const k of Object.keys(attrs)) {
+        const v = attrs[k];
+        if (v === null || v === undefined || v === false) continue;
+        if (k === "class") el.className = v;
+        else if (k.startsWith("on")) el.addEventListener(k.slice(2), v);
+        else el.setAttribute(k, v === true ? "" : v);
+      }
+    }
+    for (let i = 2; i < arguments.length; i++) {
+      const c = arguments[i];
+      if (c === null || c === undefined || c === false) continue;
+      el.appendChild(typeof c === "string" || typeof c === "number" ? document.createTextNode(String(c)) : c);
+    }
+    return el;
+  }
+  const $ = (id) => document.getElementById(id);
+
+  // ---------- model (rebuilt on every fetch; everything is keyed by feature name) ----------
+  const byName = (a, b) => a.name.localeCompare(b.name);
+  let model = null;
+
+  function buildModel(data) {
+    const features = data.features.slice().sort(byName);
+    const featureByName = new Map(features.map((f) => [f.name, f]));
+    const children = new Map(features.map((f) => [f.name, []]));
+    const related = new Map(features.map((f) => [f.name, []]));
+    for (const f of features) {
+      if (f.parent !== null) children.get(f.parent).push(f);
+    }
+    for (const r of data.relations) {
+      related.get(r.a).push({ feature: featureByName.get(r.b), note: r.note });
+      related.get(r.b).push({ feature: featureByName.get(r.a), note: r.note });
+    }
+    for (const list of related.values()) list.sort((x, y) => byName(x.feature, y.feature));
+    const searchText = new Map(features.map((f) => [f.name, {
+      name: f.name.toLowerCase(),
+      summary: f.summary.toLowerCase(),
+      aliases: f.aliases.map((a) => a.term.toLowerCase()),
+    }]));
+    return {
+      data, features, featureByName, searchText,
+      roots: features.filter((f) => f.parent === null),
+      childrenOf: (f) => children.get(f.name),
+      relatedOf: (f) => related.get(f.name),
+      parentOf: (f) => (f.parent === null ? null : featureByName.get(f.parent)),
+    };
+  }
+
+  function ancestorsOf(f) {
+    const chain = [];
+    const seen = new Set([f.name]);
+    let p = model.parentOf(f);
+    while (p && !seen.has(p.name)) { chain.unshift(p); seen.add(p.name); p = model.parentOf(p); }
+    return chain; // root first
+  }
+
+  // ---------- state (survives refreshes) ----------
+  const state = { selected: null, query: "", expanded: new Set(), tab: "features" };
+
+  const sha7 = (sha) => sha.slice(0, 7);
+  const colors = { Feature: "var(--c-feature)", Alias: "var(--c-alias)", Code: "var(--c-code)", Doc: "var(--c-doc)" };
+
+  // ---------- header ----------
+  function renderHeader() {
+    const d = model.data;
+    $("h-project").textContent = d.project;
+    $("h-head").textContent = "HEAD " + sha7(d.head);
+    const sum = (key) => model.features.reduce((n, f) => n + f[key].length, 0);
+    const counts = [
+      ["Feature", model.features.length, "features"],
+      ["Alias", sum("aliases"), "aliases"],
+      ["Code", sum("code"), "code pointers"],
+      ["Doc", sum("docs"), "docs"],
+    ];
+    const el = $("h-counts");
+    el.textContent = "";
+    for (const c of counts) {
+      el.appendChild(h("span", { class: "count" }, h("span", { class: "dot", style: "background:" + colors[c[0]] }), c[1] + " " + c[2]));
+    }
+  }
+
+  function select(name, opts) {
+    const f = model.featureByName.get(name);
+    if (!f) return;
+    state.selected = f.name;
+    for (const a of ancestorsOf(f)) state.expanded.add(a.name);
+    if (history.replaceState) history.replaceState(null, "", "#f=" + encodeURIComponent(name));
+    renderTree();
+    renderDetail($("detail"));
+    renderDetail($("graph-detail"));
+    if (state.tab === "graph") focusGraphNode(f.name);
+    if (!(opts && opts.noScroll)) {
+      const el = document.querySelector('.row[data-name="' + CSS.escape(f.name) + '"]');
+      if (el && el.scrollIntoView) el.scrollIntoView({ block: "nearest" });
+    }
+  }
+
+  // ---------- badges ----------
+  const statusBadge = (f) => f.status ? h("span", { class: "badge " + f.status }, f.status) : null;
+  const confBadge = (f) => f.confidence ? h("span", { class: "badge " + f.confidence }, f.confidence === "verified" ? "verified ✓" : f.confidence) : null;
+
+  // ---------- tree ----------
+  function matchInfo(f, q) {
+    const t = model.searchText.get(f.name);
+    if (t.name.includes(q)) return { kind: "name" };
+    const a = t.aliases.find((x) => x.includes(q));
+    if (a !== undefined) return { kind: "alias", term: a };
+    if (t.summary.includes(q)) return { kind: "summary" };
+    return null;
+  }
+
+  function renderTree() {
+    const tree = $("tree");
+    const scrollTop = tree.scrollTop;
+    tree.textContent = "";
+    const features = model.features;
+    const q = state.query.trim().toLowerCase();
+    let visible = null, matches = null;
+    if (q) {
+      matches = new Map();
+      visible = new Set();
+      for (const f of features) {
+        const m = matchInfo(f, q);
+        if (!m) continue;
+        matches.set(f.name, m);
+        visible.add(f.name);
+        for (const a of ancestorsOf(f)) visible.add(a.name);
+      }
+      $("q-hint").textContent = matches.size + " of " + features.length + " features match";
+    } else {
+      $("q-hint").textContent = features.length + " features";
+    }
+    if (!features.length) {
+      tree.appendChild(h("div", { class: "none-note", style: "padding:14px" }, "No features in this atlas yet."));
+      return;
+    }
+    if (q && !matches.size) {
+      tree.appendChild(h("div", { class: "none-note", style: "padding:14px" }, "No matches."));
+      return;
+    }
+
+    const seen = new Set();
+    function renderNode(f, depth) {
+      if (visible && !visible.has(f.name)) return;
+      if (seen.has(f.name)) return;
+      seen.add(f.name);
+      const all = model.childrenOf(f);
+      const kids = all.filter((c) => !visible || visible.has(c.name));
+      const hasKids = all.length > 0;
+      const open = q ? true : state.expanded.has(f.name);
+      const m = matches && matches.get(f.name);
+      const caret = h("span", {
+        class: "caret" + (hasKids ? "" : " leaf"),
+        onclick: (ev) => {
+          ev.stopPropagation();
+          if (state.expanded.has(f.name)) state.expanded.delete(f.name); else state.expanded.add(f.name);
+          renderTree();
+        },
+      }, open ? "▾" : "▸");
+      const row = h("div", {
+        class: "row" + (state.selected === f.name ? " sel" : ""),
+        "data-name": f.name, role: "treeitem", style: "padding-left:" + (depth * 16 + 6) + "px",
+        onclick: () => select(f.name, { noScroll: true }),
+      },
+        caret,
+        h("span", { class: "name" + (q && !m ? " dim" : ""), title: f.summary || f.name }, f.name),
+        m && m.kind === "alias" ? h("span", { class: "via" }, "alias: " + m.term) : null,
+        m && m.kind === "summary" ? h("span", { class: "via" }, "in summary") : null,
+        h("span", { class: "spacer" }),
+        statusBadge(f), confBadge(f),
+        h("span", { class: "codecount", title: "code pointers" }, "{" + f.code.length + "}")
+      );
+      tree.appendChild(row);
+      if (open) for (const c of kids) renderNode(c, depth + 1);
+    }
+    for (const r of model.roots) renderNode(r, 0);
+    tree.scrollTop = scrollTop;
+  }
+
+  // ---------- detail ----------
+  const featLink = (f, cls) => h("a", { href: "#f=" + encodeURIComponent(f.name), class: cls || null, onclick: (ev) => { ev.preventDefault(); select(f.name); } }, f.name);
+
+  function block(title, content) {
+    return h("section", { class: "block" }, h("h3", null, title), content);
+  }
+  const none = (text) => h("div", { class: "none-note" }, text);
+
+  function copyAbsolute(ev, absolute) {
+    const el = ev.currentTarget;
+    const done = (cls) => {
+      el.classList.add(cls);
+      setTimeout(() => el.classList.remove(cls), 1200);
+    };
+    navigator.clipboard.writeText(absolute).then(() => done("copied"), () => done("failed"));
+  }
+  const copyable = (absolute, ...parts) => h("span", {
+    class: "copy", role: "button", tabindex: "0", title: absolute,
+    onclick: (ev) => copyAbsolute(ev, absolute),
+    onkeydown: (ev) => { if (ev.key === "Enter" || ev.key === " ") { ev.preventDefault(); copyAbsolute(ev, absolute); } },
+  }, ...parts);
+
+  function renderDetail(target) {
+    target.textContent = "";
+    const f = state.selected === null ? null : model.featureByName.get(state.selected);
+    if (!f) {
+      target.appendChild(h("div", { class: "empty" }, model.features.length ? "Select a feature." : "Nothing to show."));
+      return;
+    }
+    const anc = ancestorsOf(f);
+    if (anc.length) {
+      const crumbs = h("div", { class: "crumbs" });
+      anc.forEach((a) => { crumbs.appendChild(featLink(a)); crumbs.appendChild(h("span", { class: "sep" }, "›")); });
+      crumbs.appendChild(h("span", null, f.name));
+      target.appendChild(crumbs);
+    }
+    target.appendChild(h("h2", null, f.name));
+    target.appendChild(h("div", { class: "badges" }, statusBadge(f), confBadge(f)));
+    target.appendChild(f.summary ? h("p", { class: "summary" }, f.summary) : h("p", { class: "summary none" }, "No summary."));
+    target.appendChild(h("div", { class: "stamps" }, "seen at " + sha7(f.seenAt)));
+
+    target.appendChild(block("Aliases", f.aliases.length
+      ? h("div", { class: "chips" }, ...f.aliases.map((a) => h("span", { class: "chip" }, a.term, h("small", null, a.source))))
+      : none("No aliases.")));
+
+    target.appendChild(block("Code (" + f.code.length + ")", f.code.length
+      ? h("ul", { class: "plain" }, ...f.code.map((c) => h("li", null,
+          copyable(c.absolute, h("span", { class: "mono" }, c.path), c.symbol ? h("span", { class: "mono sym" }, "#" + c.symbol) : null))))
+      : none("No code pointers.")));
+
+    target.appendChild(block("Docs (" + f.docs.length + ")", f.docs.length
+      ? h("ul", { class: "plain" }, ...f.docs.map((d) => h("li", null, copyable(d.absolute, h("span", { class: "mono" }, d.path)))))
+      : none("No docs.")));
+
+    const kids = model.childrenOf(f);
+    target.appendChild(block("Children (" + kids.length + ")", kids.length
+      ? h("ul", { class: "plain" }, ...kids.map((c) => h("li", null, featLink(c), statusBadge(c), c.summary ? h("span", { class: "sub" }, c.summary) : null)))
+      : none("No children.")));
+
+    const rel = model.relatedOf(f);
+    target.appendChild(block("Related (" + rel.length + ")", rel.length
+      ? h("ul", { class: "plain" }, ...rel.map((r) => h("li", null, featLink(r.feature), statusBadge(r.feature), r.feature.summary ? h("span", { class: "sub" }, r.feature.summary) : null, h("div", { class: "note" }, r.note))))
+      : none("Nothing related.")));
+  }
+
+  // ---------- graph (features only; edges are parent links and relations) ----------
+  let cy = null;
+  function themeColors() {
+    const cs = getComputedStyle(document.documentElement);
+    const g = (n) => cs.getPropertyValue(n).trim();
+    return { Feature: g("--c-feature"), text: g("--text"), line: g("--muted"), sel: g("--accent") };
+  }
+
+  function destroyGraph() {
+    if (cy) { cy.destroy(); cy = null; }
+  }
+
+  function buildGraph() {
+    const wrap = $("graph-wrap");
+    if (!window.cytoscape) {
+      if (!wrap.querySelector(".graph-msg")) wrap.appendChild(h("div", { class: "graph-msg" }, "cytoscape.js could not be loaded."));
+      return;
+    }
+    const msg = wrap.querySelector(".graph-msg");
+    if (msg) msg.remove();
+    if (cy) { cy.resize(); return; }
+    const c = themeColors();
+    const elements = [];
+    for (const f of model.features) {
+      elements.push({ data: { id: "n:" + f.name, label: f.name, name: f.name } });
+      if (f.parent !== null) elements.push({ data: { id: "p:" + f.name, source: "n:" + f.name, target: "n:" + f.parent, type: "PART_OF" } });
+    }
+    for (const r of model.data.relations) {
+      elements.push({ data: { id: "r:" + r.a + "|" + r.b, source: "n:" + r.a, target: "n:" + r.b, type: "RELATES_TO" } });
+    }
+    cy = window.cytoscape({
+      container: $("cy"),
+      elements,
+      wheelSensitivity: 0.3,
+      style: [
+        { selector: "node", style: { "background-color": c.Feature, label: "data(label)", color: c.text, "font-size": 11, "font-weight": 600, "text-valign": "bottom", "text-margin-y": 3, "text-wrap": "ellipsis", "text-max-width": 110, width: 20, height: 20, "min-zoomed-font-size": 6 } },
+        { selector: "edge", style: { width: 1, "line-color": c.line, "target-arrow-color": c.line, "target-arrow-shape": "triangle", "arrow-scale": 0.7, "curve-style": "bezier", opacity: 0.55 } },
+        { selector: 'edge[type = "PART_OF"]', style: { width: 2, opacity: 0.9 } },
+        { selector: 'edge[type = "RELATES_TO"]', style: { "line-style": "dashed", "target-arrow-shape": "none" } },
+        { selector: ".dimmed", style: { opacity: 0.12 } },
+        { selector: ":selected", style: { "border-width": 3, "border-color": c.sel } },
+      ],
+      layout: { name: "cose", animate: false, nodeRepulsion: 9000, idealEdgeLength: 70, randomize: true, fit: true, padding: 30 },
+    });
+    cy.on("tap", "node", (ev) => select(ev.target.data("name")));
+    cy.on("tap", (ev) => { if (ev.target === cy) cy.elements().removeClass("dimmed"); });
+    if (state.selected !== null) focusGraphNode(state.selected);
+  }
+
+  function highlightNeighborhood(node) {
+    cy.elements().addClass("dimmed");
+    node.closedNeighborhood().removeClass("dimmed");
+  }
+  function focusGraphNode(name) {
+    if (!cy) return;
+    const node = cy.getElementById("n:" + name);
+    if (node.empty()) return;
+    cy.elements().unselect();
+    node.select();
+    highlightNeighborhood(node);
+  }
+
+  const legend = $("legend");
+  legend.appendChild(h("span", { class: "count" }, h("span", { class: "dot", style: "background:" + colors.Feature }), "Feature"));
+  legend.appendChild(h("span", { class: "count" }, h("span", { class: "key" }), "Parent"));
+  legend.appendChild(h("span", { class: "count" }, h("span", { class: "key dashed" }), "Related"));
+
+  // ---------- tabs ----------
+  function showTab(tab) {
+    state.tab = tab;
+    for (const t of ["features", "graph"]) {
+      $("view-" + t).classList.toggle("active", t === tab);
+      $("tab-" + t).setAttribute("aria-selected", String(t === tab));
+    }
+    if (tab === "graph" && model) {
+      buildGraph();
+      if (cy) { cy.resize(); if (state.selected !== null) focusGraphNode(state.selected); }
+    }
+  }
+  document.querySelectorAll("nav.tabs button").forEach((b) => b.addEventListener("click", () => showTab(b.dataset.tab)));
+  // cytoscape loads async; if the user is already on the graph tab when it arrives, build it then
+  window.addEventListener("load", () => { if (state.tab === "graph" && model) buildGraph(); });
+
+  $("q").addEventListener("input", (ev) => { state.query = ev.target.value; if (model) renderTree(); });
+  window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", () => {
+    destroyGraph();
+    if (state.tab === "graph" && model) buildGraph();
+  });
+
+  // ---------- load and live refresh ----------
+  async function fetchAtlas() {
+    const res = await fetch("/api/atlas", { cache: "no-store" });
+    const body = await res.json();
+    if (!res.ok) throw new Error(body.error);
+    return body;
+  }
+
+  function render() {
+    renderHeader();
+    renderTree();
+    renderDetail($("detail"));
+    renderDetail($("graph-detail"));
+    destroyGraph();
+    if (state.tab === "graph") buildGraph();
+  }
+
+  function apply(data, first) {
+    model = buildModel(data);
+    $("h-err").textContent = "";
+    if (first) for (const r of model.roots) state.expanded.add(r.name);
+    if (state.selected !== null && !model.featureByName.has(state.selected)) state.selected = null;
+    if (state.selected === null) {
+      const m = first ? /^#f=(.+)$/.exec(location.hash) : null;
+      const initial = m ? decodeURIComponent(m[1]) : null;
+      if (initial && model.featureByName.has(initial)) state.selected = initial;
+      else if (model.roots.length) state.selected = model.roots[0].name;
+    }
+    if (state.selected !== null) {
+      for (const a of ancestorsOf(model.featureByName.get(state.selected))) state.expanded.add(a.name);
+    }
+    render();
+    if (first && state.selected !== null) {
+      const el = document.querySelector('.row[data-name="' + CSS.escape(state.selected) + '"]');
+      if (el && el.scrollIntoView) el.scrollIntoView({ block: "nearest" });
+    }
+  }
+
+  let refreshing = false, again = false;
+  async function refresh() {
+    if (refreshing) { again = true; return; }
+    refreshing = true;
+    try {
+      apply(await fetchAtlas(), false);
+    } catch (err) {
+      $("h-err").textContent = "refresh failed: " + err.message;
+    } finally {
+      refreshing = false;
+      if (again) { again = false; refresh(); }
+    }
+  }
+
+  fetchAtlas().then((data) => {
+    apply(data, true);
+    const events = new EventSource("/__events");
+    events.addEventListener("change", refresh);
+  }, (err) => {
+    document.body.textContent = "";
+    document.body.appendChild(h("div", { class: "fatal" }, "Could not load the atlas: " + err.message));
+  });
+})();
+</script>
+</body>
+</html>

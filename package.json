@@ -4,7 +4,8 @@
 	"private": true,
 	"type": "module",
 	"bin": {
-		"designer": "./dist/cli/designer"
+		"designer": "./dist/cli/designer",
+		"draft": "./dist/cli/draft"
 	},
 	"exports": {
 		"./plugin": "./src/plugin/index.ts"
@@ -14,17 +15,20 @@
 		"check:type": "tsrs --noEmit",
 		"check:lint": "biome check .",
 		"format": "biome format --write .",
-		"build": "bun build --compile --bytecode --compile-autoload-package-json --compile-autoload-tsconfig src/cli.ts --outfile dist/cli/designer",
+		"build": "bun run build:designer && bun run build:draft",
+		"build:designer": "bun build --compile --bytecode --compile-autoload-package-json --compile-autoload-tsconfig src/cli.ts --outfile dist/cli/designer",
+		"build:draft": "bun build --compile --bytecode packages/draft/cli/src/main.ts --outfile dist/cli/draft",
 		"start": "bun run src/cli.ts paper mcp"
 	},
 	"dependencies": {
-		"@effect/platform-bun": "4.0.0-rc.115",
+		"@effect/platform-bun": "catalog:",
 		"@executor-js/execution": "^1.5.28",
 		"@executor-js/plugin-mcp": "^1.5.28",
 		"@executor-js/runtime-quickjs": "^1.5.28",
 		"@executor-js/sdk": "^1.5.28",
 		"@modelcontextprotocol/sdk": "^1.29.0",
 		"@paper-execute/agent-team": "workspace:*",
+		"@paper-execute/draft-project": "workspace:*",
 		"@phosphor-icons/core": "^2.1.1",
 		"@standard-schema/spec": "1.1.0",
 		"effect": "catalog:",

@@ -1,9 +1,9 @@
 import { type FSWatcher, statSync, watch } from "node:fs";
 import { extname } from "node:path";
-
+import { resolveInside } from "@paper-execute/draft-project";
+import { parseViewportWidth } from "./frame.ts";
 import { galleryHtml } from "./gallery.ts";
 import { rewriteIcons } from "./icons.ts";
-import { parseViewportWidth, resolveInside } from "./project.ts";
 
 export type DraftServerOptions = {
 	readonly dir: string;

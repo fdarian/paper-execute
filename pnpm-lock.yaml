@@ -164,6 +164,9 @@ settings:
 
 catalogs:
   default:
+    '@effect/platform-bun':
+      specifier: 4.0.0-rc.115
+      version: 4.0.0-rc.115
     bun-types:
       specifier: ^1.3.14
       version: 1.4.2
@@ -186,7 +189,7 @@ importers:
   .:
     dependencies:
       '@effect/platform-bun':
-        specifier: 4.0.0-rc.115
+        specifier: 'catalog:'
         version: 4.0.0-rc.115(effect@4.0.0-rc.115)
       '@executor-js/execution':
         specifier: ^1.5.28
@@ -206,6 +209,9 @@ importers:
       '@paper-execute/agent-team':
         specifier: workspace:*
         version: link:packages/agent-team
+      '@paper-execute/draft-project':
+        specifier: workspace:*
+        version: link:packages/draft/project
       '@phosphor-icons/core':
         specifier: ^2.1.1
         version: 2.1.1
@@ -249,6 +255,38 @@ importers:
       effect:
         specifier: 'catalog:'
         version: 4.0.0-rc.115
+
+  packages/draft/atlas:
+    dependencies:
+      '@paper-execute/draft-project':
+        specifier: workspace:*
+        version: link:../project
+      effect:
+        specifier: 'catalog:'
+        version: 4.0.0-rc.115
+
+  packages/draft/cli:
+    dependencies:
+      '@effect/platform-bun':
+        specifier: 'catalog:'
+        version: 4.0.0-rc.115(effect@4.0.0-rc.115)
+      '@paper-execute/agent-team':
+        specifier: workspace:*
+        version: link:../../agent-team
+      '@paper-execute/draft-atlas':
+        specifier: workspace:*
+        version: link:../atlas
+      '@paper-execute/draft-project':
+        specifier: workspace:*
+        version: link:../project
+      cytoscape:
+        specifier: 3.34.4
+        version: 3.34.4
+      effect:
+        specifier: 'catalog:'
+        version: 4.0.0-rc.115
+
+  packages/draft/project: {}
 
 packages:
 
@@ -752,6 +790,10 @@ packages:
   cross-spawn@7.0.6:
     resolution: {integrity: sha512-uV2QOWP2nWzsy2aMp8aRibhi9dlzF5Hgh5SHaB9OiTGEyDTiJJyx0uy51QXdyWbtAHNua4XJzUKca3OzKUd3vA==}
     engines: {node: '>= 8'}
+
+  cytoscape@3.34.4:
+    resolution: {integrity: sha512-msY99tMY8iWTg+sIPGfSqDcPNOt4xcj+v/K/7qUFaCUxxlqnMkUYLBjRUzn9W5CU/R2hrmtJa5+UtovrEM2ctg==}
+    engines: {node: '>=0.10'}
 
   dayjs@1.11.23:
     resolution: {integrity: sha512-QDTCU0M0MxR3hQfnlDJfwekQiaanm1ubOD231u73WBckQ/fsamwRLiE2GBz6D3a/xF1NgfiDLJjXBa1hYOYTtQ==}
@@ -2029,6 +2071,8 @@ snapshots:
       path-key: 3.1.1
       shebang-command: 2.0.0
       which: 2.0.2
+
+  cytoscape@3.34.4: {}
 
   dayjs@1.11.23: {}
 

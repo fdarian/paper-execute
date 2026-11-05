@@ -4,9 +4,8 @@ import { dirname, isAbsolute, join } from "node:path";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { z } from "zod";
-
+import { parseViewportWidth, resolveFrame } from "./frame.ts";
 import { draftInstructions } from "./instructions.ts";
-import { parseViewportWidth, resolveFrame } from "./project.ts";
 import { ChromeRenderer } from "./renderer.ts";
 import { type DraftServer, startDraftServer } from "./server.ts";
 

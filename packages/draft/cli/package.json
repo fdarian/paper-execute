@@ -1,0 +1,14 @@
+{
+	"name": "@paper-execute/draft-cli",
+	"version": "0.1.0",
+	"private": true,
+	"type": "module",
+	"dependencies": {
+		"@effect/platform-bun": "catalog:",
+		"@paper-execute/agent-team": "workspace:*",
+		"@paper-execute/draft-atlas": "workspace:*",
+		"@paper-execute/draft-project": "workspace:*",
+		"cytoscape": "3.34.4",
+		"effect": "catalog:"
+	}
+}

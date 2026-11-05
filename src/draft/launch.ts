@@ -1,6 +1,6 @@
+import { defaultProjectName, projectDir } from "@paper-execute/draft-project";
 import type { DesignerLaunch } from "#/designer/launch";
 import { draftInstructions } from "./instructions.ts";
-import { defaultProjectName, projectDir } from "./project.ts";
 
 export function draftLaunch(project: string | undefined): DesignerLaunch {
 	const dir = projectDir(project ?? defaultProjectName(process.cwd()));

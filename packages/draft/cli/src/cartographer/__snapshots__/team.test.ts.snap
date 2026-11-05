@@ -1,0 +1,66 @@
+// Bun Snapshot v1, https://bun.sh/docs/test/snapshots
+
+exports[`claude argv 1`] = `
+[
+  "--dangerously-skip-permissions",
+  "--mcp-config",
+  {
+    "mcpServers": {},
+  },
+  "--strict-mcp-config",
+  "--plugin-dir",
+  "<tmp>/cartographer-demo-<hash>",
+  "--add-dir",
+  "<draft-root>/projects/demo",
+  "--add-dir",
+  "<repo>",
+  "--setting-sources",
+  "project,local",
+  "--settings",
+  {
+    "claudeMdExcludes": [
+      "/x/**",
+    ],
+    "editorMode": "vim",
+    "enabledPlugins": {},
+    "promptCacheTtl": "5m",
+    "subagentPromptCacheTtl": "5m",
+    "theme": "dark",
+  },
+  "--agents",
+  {
+    "cartographer": {
+      "description": "Answers questions about demo from its atlas and keeps the atlas correct.",
+      "model": "sonnet",
+      "prompt": "sha256:faf90b29d5a1cd55 length:2768",
+      "tools": [
+        "Bash",
+        "Read",
+        "Grep",
+        "Glob",
+        "Write",
+        "Agent",
+        "Skill",
+      ],
+    },
+    "surveyor": {
+      "autoCompactWindow": 100000,
+      "description": "Indexes one area of demo into the atlas and reports the features it wrote.",
+      "model": "haiku",
+      "prompt": "sha256:0d38bdc9927e1951 length:3546",
+      "tools": [
+        "Bash",
+        "Read",
+        "Grep",
+        "Glob",
+      ],
+    },
+  },
+  "--agent",
+  "cartographer",
+  "--continue",
+  "--resume",
+  "abc",
+  "--verbose",
+]
+`;
