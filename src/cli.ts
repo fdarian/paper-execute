@@ -1,15 +1,19 @@
 #!/usr/bin/env bun
 
 import { BunRuntime, BunServices } from "@effect/platform-bun";
+import { type CacheTtl, cacheTtlFlag, ccFlags } from "@paper-execute/agent-team";
 import { Effect, Option } from "effect";
-import { Argument, Command, Flag } from "effect/unstable/cli";
+import { Command, Flag } from "effect/unstable/cli";
 import type { DesignBackend } from "#/backend";
 import { brilliantBackend } from "#/backend/brilliant";
 import { executorLaunch } from "#/backend/launch";
 import { paperBackend } from "#/backend/paper";
-import { type DesignerAcpOptions, runDesignerAcp } from "#/designer/acp";
-import { type DesignerClaudeOptions, runDesignerClaude } from "#/designer/claude-code";
-import type { CacheTtl } from "#/designer/settings";
+import {
+	type DesignerAcpOptions,
+	type DesignerClaudeOptions,
+	runDesignerAcp,
+	runDesignerClaude,
+} from "#/designer/run";
 import { draftLaunch } from "#/draft/launch";
 import { serveDraftStdio } from "#/draft/mcp";
 import { serveDraftView } from "#/draft/view";
@@ -20,29 +24,6 @@ const mcpCommand = (backend: DesignBackend) =>
 	Command.make("mcp", {}, () => serveStdio(backend)).pipe(
 		Command.withDescription(`Run the ${backend.name} execute MCP server over stdio`),
 	);
-
-const cacheTtlFlag = Flag.optional(Flag.Literals("cache-ttl", ["5m", "1h"])).pipe(
-	Flag.withDescription(
-		"Prompt cache TTL for director and designer (5m or 1h); e.g. 5m when designer is driven by another agent. Default: Claude Code's automatic choice",
-	),
-);
-
-// Effect CLI rejects unknown flags, so claude's own flags (other than -c / -r) must follow `--`.
-// Effect CLI has no optional-value flags, so `-r` is boolean and its session id arrives as the first positional.
-const ccFlags = {
-	continue: Flag.Boolean("continue").pipe(
-		Flag.withAlias("c"),
-		Flag.withDefault(false),
-		Flag.withDescription("Continue the most recent conversation"),
-	),
-	resume: Flag.Boolean("resume").pipe(
-		Flag.withAlias("r"),
-		Flag.withDefault(false),
-		Flag.withDescription("Resume a conversation: `-r <id>`, or `-r` alone for the picker"),
-	),
-	args: Argument.String("args").pipe(Argument.variadic()),
-	cacheTtl: cacheTtlFlag,
-};
 
 const launchClaude = (
 	config: {
@@ -65,7 +46,7 @@ const ccDescription = (group: string) =>
 	`Launch Claude Code with the designer agent; pass other claude args after \`--\` (designer ${group} cc -- --verbose)`;
 
 const ccCommand = (backend: DesignBackend) =>
-	Command.make("cc", ccFlags, (config) =>
+	Command.make("cc", { ...ccFlags, cacheTtl: cacheTtlFlag }, (config) =>
 		launchClaude(config, (booted) => executorLaunch(backend, booted)),
 	).pipe(Command.withDescription(ccDescription(backend.cliPath.join(" "))));
 
@@ -128,6 +109,7 @@ const draftCc = Command.make(
 	"cc",
 	{
 		...ccFlags,
+		cacheTtl: cacheTtlFlag,
 		project: Flag.optional(Flag.String("project")).pipe(
 			Flag.withDescription("Project name (default: git repo or folder name of the cwd)"),
 		),

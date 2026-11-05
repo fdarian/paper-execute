@@ -12,5 +12,5 @@
 		"lib": ["ES2022", "DOM"],
 		"types": ["bun-types"]
 	},
-	"include": ["src/**/*.ts"]
+	"include": ["src/**/*.ts", "packages/**/src/**/*.ts"]
 }

@@ -162,6 +162,18 @@ settings:
   autoInstallPeers: true
   excludeLinksFromLockfile: false
 
+catalogs:
+  default:
+    bun-types:
+      specifier: ^1.3.14
+      version: 1.4.2
+    effect:
+      specifier: 4.0.0-rc.115
+      version: 4.0.0-rc.115
+    zod:
+      specifier: ^4.4.3
+      version: 4.6.5
+
 patchedDependencies:
   '@agentclientprotocol/claude-agent-acp@0.93.0': bafd4d40882dc46a8cd5506b08905c981ca6c143375cbe403512e2dacede030c
   '@executor-js/codemode-core@1.6.8': 7900c600006a37e77869acb16cd668f953914f4e142a8ca450f944a23493dcff
@@ -173,9 +185,6 @@ importers:
 
   .:
     dependencies:
-      '@agentclientprotocol/claude-agent-acp':
-        specifier: 0.93.0
-        version: 0.93.0(patch_hash=bafd4d40882dc46a8cd5506b08905c981ca6c143375cbe403512e2dacede030c)(@anthropic-ai/sdk@0.135.0(zod@4.6.5))(@modelcontextprotocol/sdk@1.30.0(@cfworker/json-schema@4.1.1)(zod@4.6.5))
       '@effect/platform-bun':
         specifier: 4.0.0-rc.115
         version: 4.0.0-rc.115(effect@4.0.0-rc.115)
@@ -194,6 +203,9 @@ importers:
       '@modelcontextprotocol/sdk':
         specifier: ^1.29.0
         version: 1.30.0(@cfworker/json-schema@4.1.1)(zod@4.6.5)
+      '@paper-execute/agent-team':
+        specifier: workspace:*
+        version: link:packages/agent-team
       '@phosphor-icons/core':
         specifier: ^2.1.1
         version: 2.1.1
@@ -201,7 +213,7 @@ importers:
         specifier: 1.1.0
         version: 1.1.0
       effect:
-        specifier: 4.0.0-rc.115
+        specifier: 'catalog:'
         version: 4.0.0-rc.115
       image-size:
         specifier: ^2.0.4
@@ -210,7 +222,7 @@ importers:
         specifier: ^7.2.0
         version: 7.2.0
       zod:
-        specifier: ^4.4.3
+        specifier: 'catalog:'
         version: 4.6.5
     devDependencies:
       '@biomejs/biome':
@@ -220,7 +232,7 @@ importers:
         specifier: ^1.0.4
         version: 1.0.4
       bun-types:
-        specifier: ^1.3.14
+        specifier: 'catalog:'
         version: 1.4.2
       tsrs:
         specifier: 0.18.0-ts7.1.0-dev.20260929
@@ -228,6 +240,15 @@ importers:
       typescript:
         specifier: ^6.0.3
         version: 6.0.3
+
+  packages/agent-team:
+    dependencies:
+      '@agentclientprotocol/claude-agent-acp':
+        specifier: 0.93.0
+        version: 0.93.0(patch_hash=bafd4d40882dc46a8cd5506b08905c981ca6c143375cbe403512e2dacede030c)(@anthropic-ai/sdk@0.135.0(zod@4.6.7))(@modelcontextprotocol/sdk@1.30.0(@cfworker/json-schema@4.1.1)(zod@4.6.7))
+      effect:
+        specifier: 'catalog:'
+        version: 4.0.0-rc.115
 
 packages:
 
@@ -1461,10 +1482,10 @@ packages:
 
 snapshots:
 
-  '@agentclientprotocol/claude-agent-acp@0.93.0(patch_hash=bafd4d40882dc46a8cd5506b08905c981ca6c143375cbe403512e2dacede030c)(@anthropic-ai/sdk@0.135.0(zod@4.6.5))(@modelcontextprotocol/sdk@1.30.0(@cfworker/json-schema@4.1.1)(zod@4.6.5))':
+  '@agentclientprotocol/claude-agent-acp@0.93.0(patch_hash=bafd4d40882dc46a8cd5506b08905c981ca6c143375cbe403512e2dacede030c)(@anthropic-ai/sdk@0.135.0(zod@4.6.7))(@modelcontextprotocol/sdk@1.30.0(@cfworker/json-schema@4.1.1)(zod@4.6.7))':
     dependencies:
       '@agentclientprotocol/sdk': 1.9.0(zod@4.6.7)
-      '@anthropic-ai/claude-agent-sdk': 0.3.300(@anthropic-ai/sdk@0.135.0(zod@4.6.5))(@modelcontextprotocol/sdk@1.30.0(@cfworker/json-schema@4.1.1)(zod@4.6.5))(zod@4.6.7)
+      '@anthropic-ai/claude-agent-sdk': 0.3.300(@anthropic-ai/sdk@0.135.0(zod@4.6.7))(@modelcontextprotocol/sdk@1.30.0(@cfworker/json-schema@4.1.1)(zod@4.6.7))(zod@4.6.7)
       diff: 9.0.0
       zod: 4.6.7
     transitivePeerDependencies:
@@ -1499,10 +1520,10 @@ snapshots:
   '@anthropic-ai/claude-agent-sdk-win32-x64@0.3.300':
     optional: true
 
-  '@anthropic-ai/claude-agent-sdk@0.3.300(@anthropic-ai/sdk@0.135.0(zod@4.6.5))(@modelcontextprotocol/sdk@1.30.0(@cfworker/json-schema@4.1.1)(zod@4.6.5))(zod@4.6.7)':
+  '@anthropic-ai/claude-agent-sdk@0.3.300(@anthropic-ai/sdk@0.135.0(zod@4.6.7))(@modelcontextprotocol/sdk@1.30.0(@cfworker/json-schema@4.1.1)(zod@4.6.7))(zod@4.6.7)':
     dependencies:
-      '@anthropic-ai/sdk': 0.135.0(zod@4.6.5)
-      '@modelcontextprotocol/sdk': 1.30.0(@cfworker/json-schema@4.1.1)(zod@4.6.5)
+      '@anthropic-ai/sdk': 0.135.0(zod@4.6.7)
+      '@modelcontextprotocol/sdk': 1.30.0(@cfworker/json-schema@4.1.1)(zod@4.6.7)
       zod: 4.6.7
     optionalDependencies:
       '@anthropic-ai/claude-agent-sdk-darwin-arm64': 0.3.300
@@ -1514,13 +1535,13 @@ snapshots:
       '@anthropic-ai/claude-agent-sdk-win32-arm64': 0.3.300
       '@anthropic-ai/claude-agent-sdk-win32-x64': 0.3.300
 
-  '@anthropic-ai/sdk@0.135.0(zod@4.6.5)':
+  '@anthropic-ai/sdk@0.135.0(zod@4.6.7)':
     dependencies:
       '@opentelemetry/api': 1.9.1
       json-schema-to-ts: 3.1.1
       standardwebhooks: 1.1.1
     optionalDependencies:
-      zod: 4.6.5
+      zod: 4.6.7
 
   '@babel/helper-string-parser@7.29.7': {}
 
@@ -1619,7 +1640,7 @@ snapshots:
       '@babel/parser': 7.29.8
       '@standard-schema/spec': 1.1.0
       ajv: 8.20.0
-      ajv-formats: 3.0.1(ajv@8.20.0)
+      ajv-formats: 3.0.1
       effect: 4.0.0-rc.115
       sucrase: 3.35.1
 
@@ -1768,7 +1789,7 @@ snapshots:
     dependencies:
       '@hono/node-server': 2.1.1(hono@4.13.8)
       ajv: 8.20.0
-      ajv-formats: 3.0.1(ajv@8.20.0)
+      ajv-formats: 3.0.1
       content-type: 1.0.5
       cors: 2.8.6
       cross-spawn: 7.0.6
@@ -1792,7 +1813,7 @@ snapshots:
     dependencies:
       '@hono/node-server': 2.1.1(hono@4.13.8)
       ajv: 8.20.0
-      ajv-formats: 3.0.1(ajv@8.20.0)
+      ajv-formats: 3.0.1
       content-type: 1.0.5
       cors: 2.8.6
       cross-spawn: 7.0.6
@@ -1807,6 +1828,30 @@ snapshots:
       raw-body: 3.0.2
       zod: 4.6.5
       zod-to-json-schema: 3.25.2(zod@4.6.5)
+    optionalDependencies:
+      '@cfworker/json-schema': 4.1.1
+    transitivePeerDependencies:
+      - supports-color
+
+  '@modelcontextprotocol/sdk@1.30.0(@cfworker/json-schema@4.1.1)(zod@4.6.7)':
+    dependencies:
+      '@hono/node-server': 2.1.1(hono@4.13.8)
+      ajv: 8.20.0
+      ajv-formats: 3.0.1
+      content-type: 1.0.5
+      cors: 2.8.6
+      cross-spawn: 7.0.6
+      eventsource: 3.0.7
+      eventsource-parser: 3.1.1
+      express: 5.2.1
+      express-rate-limit: 8.7.0(express@5.2.1)
+      hono: 4.13.8
+      jose: 6.2.12
+      json-schema-typed: 8.0.2
+      pkce-challenge: 5.0.1
+      raw-body: 3.0.2
+      zod: 4.6.7
+      zod-to-json-schema: 3.25.2(zod@4.6.7)
     optionalDependencies:
       '@cfworker/json-schema': 4.1.1
     transitivePeerDependencies:
@@ -1863,8 +1908,8 @@ snapshots:
       mime-types: 3.0.2
       negotiator: 1.1.0
 
-  ajv-formats@3.0.1(ajv@8.20.0):
-    optionalDependencies:
+  ajv-formats@3.0.1:
+    dependencies:
       ajv: 8.20.0
 
   ajv@8.20.0:
@@ -2657,6 +2702,10 @@ snapshots:
   zod-to-json-schema@3.25.2(zod@4.6.5):
     dependencies:
       zod: 4.6.5
+
+  zod-to-json-schema@3.25.2(zod@4.6.7):
+    dependencies:
+      zod: 4.6.7
 
   zod@4.3.6: {}
 
