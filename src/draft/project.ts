@@ -4,10 +4,14 @@ import { basename, isAbsolute, join, relative, resolve, sep } from "node:path";
 
 export const defaultViewportWidth = 1440;
 
+function dataDir(): string {
+	const override = process.env.DRAFT_DATA_DIR;
+	if (override !== undefined && override.length > 0) return resolve(override);
+	return join(homedir(), ".config", "draft");
+}
+
 export function projectsRoot(): string {
-	const override = process.env.DRAFT_PROJECTS_DIR;
-	if (override !== undefined && override.length > 0) return override;
-	return join(homedir(), ".config", "draft", "projects");
+	return join(dataDir(), "projects");
 }
 
 export function defaultProjectName(cwd: string): string {
