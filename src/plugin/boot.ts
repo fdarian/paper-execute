@@ -14,3 +14,5 @@ export function bootPluginRegistry() {
 		return { config: discovered.config, registry };
 	});
 }
+
+export type BootedPlugins = Effect.Success<ReturnType<typeof bootPluginRegistry>>;

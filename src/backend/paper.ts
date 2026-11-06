@@ -30,6 +30,6 @@ export const paperBackend: DesignBackend = {
 	defaultMcpUrl: "http://127.0.0.1:29979/mcp",
 	mcpUrlEnv: "PAPER_MCP_URL",
 	mcpUrl: (config) => config.paperMcpUrl,
-	cliPath: [],
+	cliPath: ["paper"],
 	instructions,
 };

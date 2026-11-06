@@ -1,0 +1,373 @@
+// Bun Snapshot v1, https://bun.sh/docs/test/snapshots
+
+exports[`paper cc: claude argv 1`] = `
+[
+  "--dangerously-skip-permissions",
+  "--mcp-config",
+  {
+    "mcpServers": {
+      "paper": {
+        "alwaysLoad": true,
+        "args": [
+          "<main>",
+          "paper",
+          "mcp",
+        ],
+        "command": "<exec>",
+        "type": "stdio",
+      },
+    },
+  },
+  "--strict-mcp-config",
+  "--plugin-dir",
+  "<tmp>/paper-refs-1i58hcongnxn7",
+  "--setting-sources",
+  "project,local",
+  "--settings",
+  {
+    "claudeMdExcludes": [
+      "/x/**",
+    ],
+    "editorMode": "vim",
+    "enabledPlugins": {
+      "frontend-design@claude-plugins-official": true,
+      "skill-mention@dotfiles": true,
+    },
+    "extraKnownMarketplaces": {
+      "dotfiles": {
+        "source": "x",
+      },
+    },
+    "promptCacheTtl": "5m",
+    "subagentPromptCacheTtl": "5m",
+    "theme": "dark",
+  },
+  "--agents",
+  {
+    "designer": {
+      "autoCompactWindow": 100000,
+      "description": "Executes a design brief in Paper and reports back with a screenshot path.",
+      "model": "haiku",
+      "prompt": "sha256:30a716deabc9a3a3 length:9449",
+    },
+    "director": {
+      "description": "Directs design work in Paper through the designer subagent.",
+      "model": "opus",
+      "prompt": "sha256:6fe752195f0d6094 length:11435",
+    },
+  },
+  "--agent",
+  "director",
+  "--continue",
+  "--resume",
+  "abc",
+  "--verbose",
+]
+`;
+
+exports[`paper cc: ACP session options 1`] = `
+{
+  "fresh": {
+    "additionalDirectories": [],
+    "agent": "director",
+    "agents": {
+      "designer": {
+        "autoCompactWindow": 100000,
+        "description": "Executes a design brief in Paper and reports back with a screenshot path.",
+        "model": "haiku",
+        "prompt": "sha256:30a716deabc9a3a3 length:9449",
+      },
+      "director": {
+        "description": "Directs design work in Paper through the designer subagent.",
+        "model": "opus",
+        "prompt": "sha256:6fe752195f0d6094 length:11435",
+      },
+    },
+    "mcpServers": {
+      "paper": {
+        "alwaysLoad": true,
+        "args": [
+          "<main>",
+          "paper",
+          "mcp",
+        ],
+        "command": "<exec>",
+        "type": "stdio",
+      },
+    },
+    "plugins": [
+      {
+        "path": "<tmp>/paper-refs-1i58hcongnxn7",
+        "type": "local",
+      },
+    ],
+    "settingSources": [
+      "project",
+      "local",
+    ],
+    "settings": {
+      "claudeMdExcludes": [
+        "/x/**",
+      ],
+      "editorMode": "vim",
+      "enabledPlugins": {
+        "frontend-design@claude-plugins-official": true,
+        "skill-mention@dotfiles": true,
+      },
+      "extraKnownMarketplaces": {
+        "dotfiles": {
+          "source": "x",
+        },
+      },
+      "model": "opus",
+      "promptCacheTtl": "1h",
+      "subagentPromptCacheTtl": "1h",
+      "theme": "dark",
+    },
+  },
+  "model": "opus",
+  "provided": {
+    "additionalDirectories": [
+      "/extra",
+    ],
+    "agent": "director",
+    "agents": {
+      "designer": {
+        "autoCompactWindow": 100000,
+        "description": "Executes a design brief in Paper and reports back with a screenshot path.",
+        "model": "haiku",
+        "prompt": "sha256:30a716deabc9a3a3 length:9449",
+      },
+      "director": {
+        "description": "Directs design work in Paper through the designer subagent.",
+        "model": "opus",
+        "prompt": "sha256:6fe752195f0d6094 length:11435",
+      },
+    },
+    "mcpServers": {
+      "other": {
+        "type": "http",
+      },
+      "paper": {
+        "alwaysLoad": true,
+        "args": [
+          "<main>",
+          "paper",
+          "mcp",
+        ],
+        "command": "<exec>",
+        "type": "stdio",
+      },
+    },
+    "plugins": [
+      {
+        "path": "<tmp>/paper-refs-1i58hcongnxn7",
+        "type": "local",
+      },
+    ],
+    "settingSources": [
+      "project",
+      "local",
+    ],
+    "settings": {
+      "claudeMdExcludes": [
+        "/x/**",
+      ],
+      "editorMode": "vim",
+      "enabledPlugins": {
+        "frontend-design@claude-plugins-official": true,
+        "skill-mention@dotfiles": true,
+      },
+      "extraKnownMarketplaces": {
+        "dotfiles": {
+          "source": "x",
+        },
+      },
+      "model": "opus",
+      "promptCacheTtl": "1h",
+      "subagentPromptCacheTtl": "1h",
+      "theme": "dark",
+    },
+  },
+}
+`;
+
+exports[`brilliant cc: claude argv 1`] = `
+[
+  "--dangerously-skip-permissions",
+  "--mcp-config",
+  {
+    "mcpServers": {
+      "brilliant": {
+        "alwaysLoad": true,
+        "args": [
+          "<main>",
+          "brilliant",
+          "mcp",
+        ],
+        "command": "<exec>",
+        "type": "stdio",
+      },
+    },
+  },
+  "--strict-mcp-config",
+  "--setting-sources",
+  "project,local",
+  "--settings",
+  {
+    "claudeMdExcludes": [
+      "/x/**",
+    ],
+    "editorMode": "vim",
+    "enabledPlugins": {
+      "frontend-design@claude-plugins-official": true,
+      "skill-mention@dotfiles": true,
+    },
+    "extraKnownMarketplaces": {
+      "dotfiles": {
+        "source": "x",
+      },
+    },
+    "promptCacheTtl": "5m",
+    "subagentPromptCacheTtl": "5m",
+    "theme": "dark",
+  },
+  "--agents",
+  {
+    "designer": {
+      "autoCompactWindow": 100000,
+      "description": "Executes a design brief in Brilliant and reports back with a screenshot path.",
+      "model": "haiku",
+      "prompt": "sha256:cd91b25f6007c26b length:10720",
+    },
+    "director": {
+      "description": "Directs design work in Brilliant through the designer subagent.",
+      "model": "opus",
+      "prompt": "sha256:2f9441c7c1f0833b length:12714",
+    },
+  },
+  "--agent",
+  "director",
+  "--continue",
+  "--resume",
+  "abc",
+  "--verbose",
+]
+`;
+
+exports[`brilliant cc: ACP session options 1`] = `
+{
+  "fresh": {
+    "additionalDirectories": [],
+    "agent": "director",
+    "agents": {
+      "designer": {
+        "autoCompactWindow": 100000,
+        "description": "Executes a design brief in Brilliant and reports back with a screenshot path.",
+        "model": "haiku",
+        "prompt": "sha256:cd91b25f6007c26b length:10720",
+      },
+      "director": {
+        "description": "Directs design work in Brilliant through the designer subagent.",
+        "model": "opus",
+        "prompt": "sha256:2f9441c7c1f0833b length:12714",
+      },
+    },
+    "mcpServers": {
+      "brilliant": {
+        "alwaysLoad": true,
+        "args": [
+          "<main>",
+          "brilliant",
+          "mcp",
+        ],
+        "command": "<exec>",
+        "type": "stdio",
+      },
+    },
+    "plugins": [],
+    "settingSources": [
+      "project",
+      "local",
+    ],
+    "settings": {
+      "claudeMdExcludes": [
+        "/x/**",
+      ],
+      "editorMode": "vim",
+      "enabledPlugins": {
+        "frontend-design@claude-plugins-official": true,
+        "skill-mention@dotfiles": true,
+      },
+      "extraKnownMarketplaces": {
+        "dotfiles": {
+          "source": "x",
+        },
+      },
+      "model": "opus",
+      "promptCacheTtl": "1h",
+      "subagentPromptCacheTtl": "1h",
+      "theme": "dark",
+    },
+  },
+  "model": "opus",
+  "provided": {
+    "additionalDirectories": [
+      "/extra",
+    ],
+    "agent": "director",
+    "agents": {
+      "designer": {
+        "autoCompactWindow": 100000,
+        "description": "Executes a design brief in Brilliant and reports back with a screenshot path.",
+        "model": "haiku",
+        "prompt": "sha256:cd91b25f6007c26b length:10720",
+      },
+      "director": {
+        "description": "Directs design work in Brilliant through the designer subagent.",
+        "model": "opus",
+        "prompt": "sha256:2f9441c7c1f0833b length:12714",
+      },
+    },
+    "mcpServers": {
+      "brilliant": {
+        "alwaysLoad": true,
+        "args": [
+          "<main>",
+          "brilliant",
+          "mcp",
+        ],
+        "command": "<exec>",
+        "type": "stdio",
+      },
+      "other": {
+        "type": "http",
+      },
+    },
+    "plugins": [],
+    "settingSources": [
+      "project",
+      "local",
+    ],
+    "settings": {
+      "claudeMdExcludes": [
+        "/x/**",
+      ],
+      "editorMode": "vim",
+      "enabledPlugins": {
+        "frontend-design@claude-plugins-official": true,
+        "skill-mention@dotfiles": true,
+      },
+      "extraKnownMarketplaces": {
+        "dotfiles": {
+          "source": "x",
+        },
+      },
+      "model": "opus",
+      "promptCacheTtl": "1h",
+      "subagentPromptCacheTtl": "1h",
+      "theme": "dark",
+    },
+  },
+}
+`;

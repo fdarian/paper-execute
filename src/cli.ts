@@ -1,13 +1,19 @@
 #!/usr/bin/env bun
 
 import { BunRuntime, BunServices } from "@effect/platform-bun";
-import { Effect } from "effect";
-import { Argument, Command, Flag } from "effect/unstable/cli";
+import { type CacheTtl, cacheTtlFlag, ccFlags } from "@paper-execute/agent-team";
+import { Effect, Option } from "effect";
+import { Command } from "effect/unstable/cli";
 import type { DesignBackend } from "#/backend";
 import { brilliantBackend } from "#/backend/brilliant";
+import { executorLaunch } from "#/backend/launch";
 import { paperBackend } from "#/backend/paper";
-import { runDesignerAcp } from "#/designer/acp";
-import { runDesignerClaude } from "#/designer/claude-code";
+import {
+	type DesignerAcpOptions,
+	type DesignerClaudeOptions,
+	runDesignerAcp,
+	runDesignerClaude,
+} from "#/designer/run";
 import { serveStdio } from "#/mcp/stdio";
 import pkg from "../package.json" with { type: "json" };
 
@@ -16,51 +22,65 @@ const mcpCommand = (backend: DesignBackend) =>
 		Command.withDescription(`Run the ${backend.name} execute MCP server over stdio`),
 	);
 
-// Effect CLI rejects unknown flags, so claude's own flags (other than -c / -r) must follow `--`.
-// Effect CLI has no optional-value flags, so `-r` is boolean and its session id arrives as the first positional.
+const launchClaude = (
+	config: {
+		readonly continue: boolean;
+		readonly resume: boolean;
+		readonly args: readonly string[];
+		readonly cacheTtl: Option.Option<CacheTtl>;
+	},
+	buildLaunch: DesignerClaudeOptions["buildLaunch"],
+) =>
+	runDesignerClaude({
+		buildLaunch,
+		continue: config.continue,
+		resume: config.resume,
+		passthrough: config.args,
+		cacheTtl: Option.getOrUndefined(config.cacheTtl),
+	}).pipe(Effect.flatMap((exitCode) => Effect.sync(() => process.exit(exitCode))));
+
+const ccDescription = (group: string) =>
+	`Launch Claude Code with the designer agent; pass other claude args after \`--\` (designer ${group} cc -- --verbose)`;
+
 const ccCommand = (backend: DesignBackend) =>
-	Command.make(
-		"cc",
-		{
-			continue: Flag.Boolean("continue").pipe(
-				Flag.withAlias("c"),
-				Flag.withDefault(false),
-				Flag.withDescription("Continue the most recent conversation"),
-			),
-			resume: Flag.Boolean("resume").pipe(
-				Flag.withAlias("r"),
-				Flag.withDefault(false),
-				Flag.withDescription("Resume a conversation: `-r <id>`, or `-r` alone for the picker"),
-			),
-			args: Argument.String("args").pipe(Argument.variadic()),
-		},
-		(config) =>
-			runDesignerClaude({
-				backend,
-				continue: config.continue,
-				resume: config.resume,
-				passthrough: config.args,
-			}).pipe(Effect.flatMap((exitCode) => Effect.sync(() => process.exit(exitCode)))),
-	).pipe(
-		Command.withDescription(
-			"Launch Claude Code with the designer agent; pass other claude args after `--` (designer cc -- --verbose)",
-		),
+	Command.make("cc", { ...ccFlags, cacheTtl: cacheTtlFlag }, (config) =>
+		launchClaude(config, (booted) => executorLaunch(backend, booted)),
+	).pipe(Command.withDescription(ccDescription(backend.cliPath.join(" "))));
+
+const acpDescription = "Run the designer agent as an ACP server over stdio (claude-agent-acp)";
+
+const runAcp = (
+	config: { readonly cacheTtl: Option.Option<CacheTtl> },
+	buildLaunch: DesignerAcpOptions["buildLaunch"],
+) =>
+	runDesignerAcp({ buildLaunch, cacheTtl: Option.getOrUndefined(config.cacheTtl) }).pipe(
+		Effect.flatMap(() => Effect.sync(() => process.exit(0))),
 	);
 
+const acpCommand = (backend: DesignBackend) =>
+	Command.make("acp", { cacheTtl: cacheTtlFlag }, (config) =>
+		runAcp(config, (booted) => executorLaunch(backend, booted)),
+	).pipe(Command.withDescription(acpDescription));
+
+const paper = Command.make("paper").pipe(
+	Command.withDescription("Design in Paper"),
+	Command.withSubcommands([
+		mcpCommand(paperBackend),
+		ccCommand(paperBackend),
+		acpCommand(paperBackend),
+	]),
+);
+
 const brilliant = Command.make("brilliant").pipe(
-	Command.withDescription("Run against Brilliant instead of Paper"),
-	Command.withSubcommands([mcpCommand(brilliantBackend), ccCommand(brilliantBackend)]),
+	Command.withDescription("Design in Brilliant"),
+	Command.withSubcommands([
+		mcpCommand(brilliantBackend),
+		ccCommand(brilliantBackend),
+		acpCommand(brilliantBackend),
+	]),
 );
 
-const acp = Command.make("acp", {}, () =>
-	runDesignerAcp().pipe(Effect.flatMap(() => Effect.sync(() => process.exit(0)))),
-).pipe(
-	Command.withDescription("Run the designer agent as an ACP server over stdio (claude-agent-acp)"),
-);
-
-const designer = Command.make("designer").pipe(
-	Command.withSubcommands([mcpCommand(paperBackend), ccCommand(paperBackend), acp, brilliant]),
-);
+const designer = Command.make("designer").pipe(Command.withSubcommands([paper, brilliant]));
 
 // No top-level await: `--bytecode` compiles to CommonJS.
 Command.run(designer, { version: pkg.version }).pipe(
