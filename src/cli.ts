@@ -1,9 +1,11 @@
 #!/usr/bin/env bun
 
+import { openProjectAtlas } from "@draft/core/cartographer";
+import { defaultProjectName, projectDir } from "@draft/core/project";
 import { BunRuntime, BunServices } from "@effect/platform-bun";
 import { type CacheTtl, cacheTtlFlag, ccFlags } from "@paper-execute/agent-team";
 import { Effect, Option } from "effect";
-import { Command } from "effect/unstable/cli";
+import { Command, Flag } from "effect/unstable/cli";
 import type { DesignBackend } from "#/backend";
 import { brilliantBackend } from "#/backend/brilliant";
 import { executorLaunch } from "#/backend/launch";
@@ -14,6 +16,7 @@ import {
 	runDesignerAcp,
 	runDesignerClaude,
 } from "#/designer/run";
+import { draftLaunch } from "#/draft/launch";
 import { serveStdio } from "#/mcp/stdio";
 import pkg from "../package.json" with { type: "json" };
 
@@ -80,7 +83,36 @@ const brilliant = Command.make("brilliant").pipe(
 	]),
 );
 
-const designer = Command.make("designer").pipe(Command.withSubcommands([paper, brilliant]));
+const projectFlag = Flag.optional(Flag.String("project")).pipe(
+	Flag.withDescription("Project name (default: git repo or folder name of the cwd)"),
+);
+
+const resolveDraftLaunch = (project: Option.Option<string>) =>
+	Effect.gen(function* () {
+		const name = Option.getOrElse(project, () => defaultProjectName(process.cwd()));
+		const atlasOptions = { project: name, dir: projectDir(name) };
+		return draftLaunch(atlasOptions, yield* openProjectAtlas(atlasOptions, ["draft"]));
+	});
+
+const draftCc = Command.make(
+	"cc",
+	{ ...ccFlags, cacheTtl: cacheTtlFlag, project: projectFlag },
+	(config) =>
+		resolveDraftLaunch(config.project).pipe(
+			Effect.flatMap((launch) => launchClaude(config, () => launch)),
+		),
+).pipe(Command.withDescription(ccDescription("draft")));
+
+const draftAcp = Command.make("acp", { cacheTtl: cacheTtlFlag, project: projectFlag }, (config) =>
+	resolveDraftLaunch(config.project).pipe(Effect.flatMap((launch) => runAcp(config, () => launch))),
+).pipe(Command.withDescription(acpDescription));
+
+const draft = Command.make("draft").pipe(
+	Command.withDescription("Design with plain HTML files and a headless Chrome renderer"),
+	Command.withSubcommands([draftCc, draftAcp]),
+);
+
+const designer = Command.make("designer").pipe(Command.withSubcommands([paper, brilliant, draft]));
 
 // No top-level await: `--bytecode` compiles to CommonJS.
 Command.run(designer, { version: pkg.version }).pipe(

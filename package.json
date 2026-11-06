@@ -19,6 +19,7 @@
 		"start": "bun run src/cli.ts paper mcp"
 	},
 	"dependencies": {
+		"@draft/core": "github:fdarian/draft#path:/packages/core",
 		"@effect/platform-bun": "catalog:",
 		"@executor-js/execution": "^1.5.28",
 		"@executor-js/plugin-mcp": "^1.5.28",

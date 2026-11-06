@@ -177,6 +177,9 @@ catalogs:
       specifier: ^4.4.3
       version: 4.6.5
 
+overrides:
+  '@paper-execute/agent-team': link:./packages/agent-team
+
 patchedDependencies:
   '@agentclientprotocol/claude-agent-acp@0.93.0': bafd4d40882dc46a8cd5506b08905c981ca6c143375cbe403512e2dacede030c
   '@executor-js/codemode-core@1.6.8': 7900c600006a37e77869acb16cd668f953914f4e142a8ca450f944a23493dcff
@@ -188,6 +191,9 @@ importers:
 
   .:
     dependencies:
+      '@draft/core':
+        specifier: github:fdarian/draft#path:/packages/core
+        version: git+https://github.com/fdarian/draft.git#559139404ce8d0a9370b4f44c47c713ccf9bf141&path:/packages/core
       '@effect/platform-bun':
         specifier: 'catalog:'
         version: 4.0.0-rc.115(effect@4.0.0-rc.115)
@@ -207,7 +213,7 @@ importers:
         specifier: ^1.29.0
         version: 1.30.0(@cfworker/json-schema@4.1.1)(zod@4.6.5)
       '@paper-execute/agent-team':
-        specifier: workspace:*
+        specifier: link:packages/agent-team
         version: link:packages/agent-team
       '@phosphor-icons/core':
         specifier: ^2.1.1
@@ -414,6 +420,10 @@ packages:
   '@clack/prompts@1.8.1':
     resolution: {integrity: sha512-dlT1m5e/0yUL0kRNcQn7yGLVThkgbB0Ga/1AmfDDC/8ik6AIiSf2QLQO2zPYvefsHP0aFgxO93cVLCCfDp7kzQ==}
     engines: {node: '>= 20.12.0'}
+
+  '@draft/core@git+https://github.com/fdarian/draft.git#559139404ce8d0a9370b4f44c47c713ccf9bf141&path:/packages/core':
+    resolution: {commit: 559139404ce8d0a9370b4f44c47c713ccf9bf141, path: /packages/core, repo: https://github.com/fdarian/draft.git, type: git}
+    version: 0.1.0
 
   '@effect/platform-bun@4.0.0-rc.115':
     resolution: {integrity: sha512-ilTFcs66ghInP8WHCJYa4bx/yzohYM9dRR//qjmVBBpSKu1hrCTiRWpEcc1N6zrnOEPk2kyVaKg5ykSMgiBMqQ==}
@@ -1609,6 +1619,11 @@ snapshots:
       fast-string-width: 3.0.2
       fast-wrap-ansi: 0.2.2
       sisteransi: 1.0.5
+
+  '@draft/core@git+https://github.com/fdarian/draft.git#559139404ce8d0a9370b4f44c47c713ccf9bf141&path:/packages/core':
+    dependencies:
+      '@paper-execute/agent-team': link:packages/agent-team
+      effect: 4.0.0-rc.115
 
   '@effect/platform-bun@4.0.0-rc.115(effect@4.0.0-rc.115)':
     dependencies:

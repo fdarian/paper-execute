@@ -3,11 +3,14 @@ import { mkdirSync, mkdtempSync, realpathSync, rmSync, writeFileSync } from "nod
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
+import { initAtlas } from "@draft/core/atlas";
+import { type CartographerInputs, openProjectAtlas } from "@draft/core/cartographer";
 import { buildClaudeArgs } from "@paper-execute/agent-team";
 import { Effect } from "effect";
 import { brilliantBackend } from "#/backend/brilliant";
 import { executorLaunch } from "#/backend/launch";
 import { paperBackend } from "#/backend/paper";
+import { draftLaunch } from "#/draft/launch";
 import type { BootedPlugins } from "#/plugin/boot";
 import type { DesignerLaunch } from "./launch.ts";
 import { designerTeam } from "./team.ts";
@@ -15,15 +18,28 @@ import { designerTeam } from "./team.ts";
 // Pins the full claude argv and ACP session options of every launch, so the launcher can move between packages untouched.
 
 const sandbox = realpathSync(mkdtempSync(join(tmpdir(), "designer-launches-")));
+const draftRoot = join(sandbox, "draft");
 const claudeConfigDir = join(sandbox, "claude");
+const repo = join(sandbox, "repo");
 const previousCwd = process.cwd();
 const previousEnv = {
+	DRAFT_DATA_DIR: process.env.DRAFT_DATA_DIR,
 	CLAUDE_CONFIG_DIR: process.env.CLAUDE_CONFIG_DIR,
 	CLAUDE_CODE_EXECUTABLE: process.env.CLAUDE_CODE_EXECUTABLE,
 	ANTHROPIC_MODEL: process.env.ANTHROPIC_MODEL,
 };
 
-beforeAll(() => {
+function git(...args: string[]) {
+	const result = Bun.spawnSync(
+		["git", "-c", "user.name=test", "-c", "user.email=test@example.com", ...args],
+		{ cwd: repo, stdout: "pipe", stderr: "pipe" },
+	);
+	if (result.exitCode !== 0) throw new Error(`git ${args.join(" ")}: ${result.stderr.toString()}`);
+}
+
+let atlasInputs: CartographerInputs | undefined;
+
+beforeAll(async () => {
 	mkdirSync(claudeConfigDir, { recursive: true });
 	mkdirSync(sandbox, { recursive: true });
 	writeFileSync(
@@ -49,10 +65,21 @@ beforeAll(() => {
 			},
 		}),
 	);
+	process.env.DRAFT_DATA_DIR = draftRoot;
 	process.env.CLAUDE_CONFIG_DIR = claudeConfigDir;
 	// The local config wins over ~/.config, so the real user config can't leak in.
 	process.chdir(sandbox);
 	process.env.CLAUDE_CODE_EXECUTABLE = "/fake/claude";
+
+	mkdirSync(repo);
+	writeFileSync(join(repo, "README.md"), "# demo\n");
+	git("init", "-q");
+	git("add", ".");
+	git("-c", "commit.gpgsign=false", "commit", "-q", "-m", "init");
+	await Effect.runPromise(
+		Effect.scoped(initAtlas({ project: "with-atlas", dir: demoAtlasProject.dir, repo })),
+	);
+	atlasInputs = await Effect.runPromise(openProjectAtlas(demoAtlasProject, ["draft"]));
 });
 
 afterAll(() => {
@@ -66,9 +93,14 @@ afterAll(() => {
 
 const emptyBoot = { registry: { instructionsText: "" } } as unknown as BootedPlugins;
 
+const demoAtlasProject = { project: "with-atlas", dir: join(draftRoot, "projects", "with-atlas") };
+const demoProject = { project: "demo", dir: join(draftRoot, "projects", "demo") };
+
 const launches: Record<string, (booted: BootedPlugins) => DesignerLaunch> = {
 	"paper cc": (booted) => executorLaunch(paperBackend, booted),
 	"brilliant cc": (booted) => executorLaunch(brilliantBackend, booted),
+	"draft cc": () => draftLaunch(demoProject, undefined),
+	"draft cc with atlas": () => draftLaunch(demoAtlasProject, atlasInputs),
 };
 
 function promptDigest(prompt: string) {
@@ -79,6 +111,8 @@ function promptDigest(prompt: string) {
 
 function normalizeString(value: string): string {
 	return value
+		.replaceAll(repo, "<repo>")
+		.replaceAll(draftRoot, "<draft-root>")
 		.replaceAll(claudeConfigDir, "<claude-config>")
 		.replaceAll(process.execPath, "<exec>")
 		.replaceAll(Bun.main, "<main>")

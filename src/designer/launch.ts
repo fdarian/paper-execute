@@ -1,12 +1,12 @@
-import type { AgentDefinition } from "@paper-execute/agent-team";
+import type { AgentDefinition, StdioMcpServer } from "@paper-execute/agent-team";
 
 export interface DesignerLaunch {
 	readonly name: string;
 	readonly slug: string;
 	/** Fills `{{tools}}` in the shared agent prompt: where and how the designer works. */
 	readonly tools: string;
-	/** Arguments of this program that start the surface's MCP server. */
-	readonly mcpArgs: readonly string[];
+	/** Starts the surface's MCP server, registered under `slug`. */
+	readonly mcpServer: StdioMcpServer;
 	/** Appended to both agent prompts, because subagents don't receive MCP server instructions. */
 	readonly instructions: string;
 	readonly pluginDirs: readonly string[];

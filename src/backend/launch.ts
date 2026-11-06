@@ -1,3 +1,4 @@
+import { selfMcpServer } from "@paper-execute/agent-team";
 import type { DesignBackend } from "#/backend";
 import { paperBackend } from "#/backend/paper";
 import type { DesignerLaunch } from "#/designer/launch";
@@ -10,7 +11,7 @@ export function executorLaunch(backend: DesignBackend, booted: BootedPlugins): D
 		name: backend.name,
 		slug: backend.slug,
 		tools: `mcp__${backend.slug}__execute`,
-		mcpArgs: [...backend.cliPath, "mcp"],
+		mcpServer: selfMcpServer([...backend.cliPath, "mcp"]),
 		instructions: buildServerInstructions(booted.registry.instructionsText, backend),
 		pluginDirs: backend === paperBackend ? [materializePaperRefsPlugin()] : [],
 		addDirs: [],

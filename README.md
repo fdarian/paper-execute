@@ -137,3 +137,6 @@ bun run src/cli.ts paper mcp
 - `designer paper cc [-- ...args]` launches Claude Code with the designer agent, the Paper MCP server, and the `paper-refs` plugin; args after `--` pass through to `claude` (e.g. `designer paper cc -- --resume`). `--cache-ttl <5m|1h>` (on every `cc` and `acp`) sets Claude Code's prompt cache TTL for both the director and the designer subagent; omit it to keep Claude Code's automatic default.
 - `designer paper acp` runs the designer agent as an ACP server over stdio.
 - `designer brilliant mcp|cc|acp` offers the same against Brilliant.
+- `designer draft cc|acp [--project <name>]` designs with plain HTML files rendered to PNG by headless Chrome. It consumes [fdarian/draft](https://github.com/fdarian/draft) (private): `@draft/core` comes over `github:` and the `draft` binary from that repo must be on `PATH`, since it serves the render MCP server and the cartographer's atlas CLI. Dev runs from a checkout should set `DRAFT_DATA_DIR=.draft` so they don't touch the real `~/.config/draft`: `DRAFT_DATA_DIR=.draft bun run src/cli.ts draft cc`.
+
+`@draft/core` depends on `@paper-execute/agent-team` over `github:` too; `pnpm-workspace.yaml` overrides it with `link:./packages/agent-team` so only the workspace copy exists.

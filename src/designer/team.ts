@@ -1,4 +1,4 @@
-import { type AgentTeam, selfMcpServer } from "@paper-execute/agent-team";
+import type { AgentTeam } from "@paper-execute/agent-team";
 
 import { designerAssets } from "./embedded.ts";
 import type { DesignerLaunch } from "./launch.ts";
@@ -34,7 +34,7 @@ export function designerTeam(launch: DesignerLaunch): AgentTeam {
 			...launch.agents,
 		},
 		main: "director",
-		mcpServers: { [launch.slug]: selfMcpServer(launch.mcpArgs) },
+		mcpServers: { [launch.slug]: launch.mcpServer },
 		pluginDirs: launch.pluginDirs,
 		addDirs: launch.addDirs,
 		enabledPlugins: { "frontend-design@claude-plugins-official": true },
